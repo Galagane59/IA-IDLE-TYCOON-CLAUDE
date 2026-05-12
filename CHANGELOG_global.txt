@@ -1,0 +1,53 @@
+# CHANGELOG — IA Idle Tycoon / SlowAI Studio 🐢
+# Format : ## VX.X — [date] — description courte
+# Règle : mettre à jour à chaque livraison de code ou modification majeure du GDD
+
+═══════════════════════════════════════════════════════════════
+
+## V0.1 — Mai 2025 — Concept & GDD initial (ChatGPT)
+- Définition du concept : idle game sur l'IA, dimension éthique et pédagogique
+- Inspiration : Universal Paperclips (Frank Lantz / Nick Bostrom)
+- Choix moteur : HTML/JS pour prototype, Unity pour version finale mobile
+- Identité studio : SlowAI Studio, logo tortue + circuits, devise définie
+
+## V0.2 — Mai 2025 — Game Design Document complet (ChatGPT)
+- Paliers de progression définis : Garage → Petit bureau → Grand bureau → Campus → International
+- Compteurs globaux définis : 💰 Argent / 🌍 Environnement / ⚖️ Éthique / 🤖 IA
+- 6 piliers éthiques Bostrom intégrés
+- Arborescence IA niveau 1 posée : RecoPlus, ScoreFlow, CleanLab
+- Catalogue métiers complet (9 catégories, ~50 rôles)
+- Système boursier esquissé (stock-options → Bourse locale → Nasdaq)
+- Système pédagogique défini (3 couches : implicite / fiches / quizz)
+- Récompenses quizz définies, pas de diamants, 3 niveaux de rareté
+- 5 événements narratifs Bostrom conçus
+- Ratio IA/humain avec seuils et effets gameplay
+- IA assistante interne (HRBot, FinBot, LawBot) et paradoxe mise en abîme
+- Spécificités pays pour l'expansion internationale
+- Système environnemental détaillé (CO2, eau, énergie, e-waste, ressources minières)
+
+## V0.3 — Mai 2025 — Premier prototype HTML/JS (ChatGPT)
+- Interface basique fond sombre, couleurs cyan
+- Choix nom et type d'IA au démarrage
+- Compteurs : cash, compute, CO2, abonnés
+- Bouton développer IA manuellement (+abonnés)
+- Embauche annotateurs (coût initial + salaire mensuel)
+- Déblocage de 3 IA spécialisées par palier de cash
+- Score d'éthique avec érosion naturelle (-1/cycle) et contrôleurs humains
+- Boucle idle automatique toutes les 5 secondes
+- Game Over : éthique = 0 OU cash < 0
+- STATUT : fonctionnel mais gameplay peu lisible, UI basique
+
+═══════════════════════════════════════════════════════════════
+## À VENIR (backlog prioritaire)
+
+- V1.0 : Refonte complète HTML/JS — UI cartoon, tous les compteurs, palier Garage complet
+- V1.1 : Système éthique avec 6 piliers et barres visuelles
+- V1.2 : Arborescence IA niveaux 1 et 2
+- V1.3 : Système RH et métiers par catégorie
+- V1.4 : Événements narratifs Bostrom
+- V1.5 : Système environnemental détaillé
+- V1.6 : Ratio IA/humain avec événements
+- V1.7 : IA assistante interne (paradoxe)
+- V2.0 : Palier Petit Bureau
+- V3.0 : Système boursier
+- V4.0 : Expansion internationale

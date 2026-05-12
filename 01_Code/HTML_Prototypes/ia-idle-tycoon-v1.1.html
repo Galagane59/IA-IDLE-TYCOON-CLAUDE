@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>IA Idle Tycoon — SlowAI Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg0: #0a0d12;
+    --bg1: #111520;
+    --bg2: #161c2e;
+    --bg3: #1e2640;
+    --accent: #00e5a0;
+    --accent2: #00b8d9;
+    --accent3: #f5c542;
+    --danger: #ff4d6d;
+    --warn: #ff9f1c;
+    --purple: #a78bfa;
+    --text: #e8edf7;
+    --text2: #8a95b0;
+    --text3: #4a5470;
+    --border: rgba(0,229,160,0.15);
+    --border2: rgba(0,184,217,0.2);
+    --font-mono: 'Space Mono', monospace;
+    --font-main: 'Nunito', sans-serif;
+    --rad: 12px;
+    --rad-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg0); font-family: var(--font-main); color: var(--text); }
+  
+  #app { width: 100%; height: 100vh; display: flex; flex-direction: column; max-width: 480px; margin: 0 auto; position: relative; overflow: hidden; }
+
+  /* ── HEADER ── */
+  #header { background: var(--bg1); border-bottom: 1px solid var(--border); padding: 10px 14px 8px; flex-shrink: 0; }
+  #header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  #logo { display: flex; align-items: center; gap: 8px; }
+  #logo-icon { font-size: 22px; line-height: 1; }
+  #logo-text { font-size: 13px; font-weight: 900; color: var(--accent); letter-spacing: 0.5px; }
+  #logo-sub { font-size: 9px; color: var(--text3); font-family: var(--font-mono); }
+  #game-month { font-family: var(--font-mono); font-size: 11px; color: var(--text2); text-align: right; }
+  #game-month span { color: var(--accent3); font-weight: 700; }
+
+  /* compteurs header */
+  #counters-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .ctr-pill { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--rad-sm); padding: 5px 6px; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+  .ctr-pill:hover, .ctr-pill.active { border-color: var(--accent); background: var(--bg3); }
+  .ctr-pill .ctr-icon { font-size: 14px; line-height: 1; }
+  .ctr-pill .ctr-val { font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ctr-pill .ctr-lbl { font-size: 8px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* ── TABS ── */
+  #tabs { display: flex; background: var(--bg1); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .tab { flex: 1; padding: 10px 4px; text-align: center; font-size: 10px; font-weight: 700; color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; letter-spacing: 0.5px; text-transform: uppercase; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab .tab-icon { font-size: 16px; display: block; margin-bottom: 2px; }
+
+  /* ── MAIN CONTENT ── */
+  #content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding: 12px; background: var(--bg0); }
+  #content::-webkit-scrollbar { width: 3px; }
+  #content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* ── SECTIONS ── */
+  .section-title { font-size: 11px; font-weight: 800; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px; display: flex; align-items: center; gap: 6px; }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── CARDS ── */
+  .card { background: var(--bg1); border: 1px solid var(--border); border-radius: var(--rad); padding: 12px; margin-bottom: 8px; }
+  .card.highlight { border-color: var(--accent); }
+  .card.warn { border-color: var(--warn); }
+  .card.danger { border-color: var(--danger); }
+
+  /* ── BOUTONS ── */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 14px; border-radius: var(--rad-sm); font-family: var(--font-main); font-size: 13px; font-weight: 800; cursor: pointer; border: 1.5px solid; transition: all 0.15s; user-select: none; -webkit-user-select: none; }
+  .btn:active { transform: scale(0.96); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: var(--bg0); }
+  .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-secondary { background: transparent; border-color: var(--border2); color: var(--accent2); }
+  .btn-secondary:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-danger { background: transparent; border-color: var(--danger); color: var(--danger); }
+  .btn-warn { background: transparent; border-color: var(--warn); color: var(--warn); }
+  .btn-full { width: 100%; }
+  .btn-sm { padding: 5px 10px; font-size: 11px; }
+
+  /* ── IA CARDS ── */
+  .ia-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--rad); padding: 11px 12px; margin-bottom: 8px; }
+  .ia-card .ia-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .ia-card .ia-name { font-size: 13px; font-weight: 900; color: var(--accent); }
+  .ia-card .ia-type { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; font-family: var(--font-mono); }
+  .ia-card .ia-desc { font-size: 11px; color: var(--text2); margin-bottom: 8px; line-height: 1.4; }
+  .ia-card .ia-stats { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .ia-stat { font-size: 10px; font-family: var(--font-mono); background: var(--bg3); border-radius: 4px; padding: 3px 7px; }
+  .ia-stat.green { color: var(--accent); }
+  .ia-stat.red { color: var(--danger); }
+  .ia-stat.yellow { color: var(--accent3); }
+  .ia-stat.blue { color: var(--accent2); }
+  .active-badge { font-size: 9px; background: rgba(0,229,160,0.15); color: var(--accent); border: 1px solid rgba(0,229,160,0.3); border-radius: 4px; padding: 2px 7px; font-weight: 700; }
+
+  /* ── EMPLOYÉ CARDS ── */
+  .emp-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--rad); padding: 10px 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+  .emp-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; border: 2px solid var(--border); }
+  .emp-info { flex: 1; }
+  .emp-name { font-size: 12px; font-weight: 800; color: var(--text); }
+  .emp-role { font-size: 10px; color: var(--text3); }
+  .emp-salary { font-size: 10px; font-family: var(--font-mono); color: var(--danger); }
+
+  /* ── PROGRESS BARS ── */
+  .progress-wrap { margin: 6px 0; }
+  .progress-label { display: flex; justify-content: space-between; margin-bottom: 3px; }
+  .progress-label span { font-size: 10px; color: var(--text2); font-family: var(--font-mono); }
+  .progress-bar { height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+  .fill-green { background: var(--accent); }
+  .fill-blue { background: var(--accent2); }
+  .fill-yellow { background: var(--accent3); }
+  .fill-red { background: var(--danger); }
+
+  /* ── STAT ROW ── */
+  .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-key { font-size: 11px; color: var(--text2); }
+  .stat-val { font-size: 11px; font-family: var(--font-mono); font-weight: 700; }
+  .stat-val.green { color: var(--accent); }
+  .stat-val.red { color: var(--danger); }
+  .stat-val.yellow { color: var(--accent3); }
+  .stat-val.blue { color: var(--accent2); }
+
+  /* ── MODALS ── */
+  #modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 100; display: none; align-items: flex-end; justify-content: center; }
+  #modal-overlay.show { display: flex; }
+  #modal-box { background: var(--bg1); border: 1px solid var(--border); border-radius: var(--rad) var(--rad) 0 0; width: 100%; max-width: 480px; max-height: 80vh; overflow-y: auto; padding: 20px 16px 32px; animation: slideUp 0.25s ease; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  #modal-title { font-size: 16px; font-weight: 900; color: var(--accent); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  #modal-close { margin-left: auto; background: var(--bg3); border: none; color: var(--text2); width: 28px; height: 28px; border-radius: 50%; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: var(--font-main); }
+
+  /* ── EVENT BANNER ── */
+  #event-banner { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; z-index: 90; background: var(--bg1); border-top: 2px solid var(--accent3); padding: 14px 16px; display: none; animation: slideUp 0.3s ease; }
+  #event-banner.show { display: block; }
+  #event-title { font-size: 14px; font-weight: 900; color: var(--accent3); margin-bottom: 6px; }
+  #event-text { font-size: 12px; color: var(--text2); line-height: 1.5; margin-bottom: 12px; }
+  #event-btns { display: flex; gap: 8px; }
+
+  /* ── GAME OVER ── */
+  #gameover { position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 200; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; }
+  #gameover.show { display: flex; }
+  #gameover h2 { font-size: 28px; font-weight: 900; color: var(--danger); margin-bottom: 12px; }
+  #gameover p { font-size: 14px; color: var(--text2); margin-bottom: 24px; line-height: 1.6; }
+
+  /* ── NOTIFICATION ── */
+  #notif { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); background: var(--bg1); border: 1px solid var(--accent); border-radius: var(--rad-sm); padding: 8px 16px; font-size: 12px; font-weight: 700; color: var(--accent); z-index: 300; display: none; white-space: nowrap; max-width: 90%; }
+  #notif.show { display: block; animation: fadeInOut 2.5s ease forwards; }
+  @keyframes fadeInOut { 0%{opacity:0;top:20px} 10%{opacity:1;top:12px} 80%{opacity:1;top:12px} 100%{opacity:0;top:4px} }
+
+  /* ── TICKER ── */
+  #ticker { background: var(--bg2); border-top: 1px solid var(--border); padding: 5px 12px; font-size: 9px; font-family: var(--font-mono); color: var(--text3); white-space: nowrap; overflow: hidden; flex-shrink: 0; }
+  #ticker-inner { display: inline-block; animation: ticker 20s linear infinite; }
+  @keyframes ticker { from{transform:translateX(100vw)} to{transform:translateX(-100%)} }
+
+  /* ── DIVERS ── */
+  .tag { font-size: 9px; padding: 2px 7px; border-radius: 4px; font-weight: 700; font-family: var(--font-mono); }
+  .tag-eco { background: rgba(0,229,160,0.12); color: var(--accent); border: 1px solid rgba(0,229,160,0.25); }
+  .tag-eth { background: rgba(167,139,250,0.12); color: var(--purple); border: 1px solid rgba(167,139,250,0.25); }
+  .tag-rh { background: rgba(245,197,66,0.12); color: var(--accent3); border: 1px solid rgba(245,197,66,0.25); }
+  .row-split { display: flex; gap: 8px; margin-bottom: 8px; }
+  .row-split > * { flex: 1; }
+  .mini-info { font-size: 10px; color: var(--text3); text-align: center; margin-top: 4px; font-style: italic; }
+  .ethique-pilier { margin-bottom: 8px; }
+  .ethique-pilier-name { font-size: 10px; color: var(--text2); margin-bottom: 3px; display: flex; justify-content: space-between; }
+  .badge-level { font-size: 10px; font-weight: 900; padding: 3px 10px; border-radius: 6px; }
+  .badge-garage { background: rgba(74,84,112,0.4); color: var(--text2); border: 1px solid var(--text3); }
+  .badge-bureau { background: rgba(0,229,160,0.15); color: var(--accent); border: 1px solid rgba(0,229,160,0.3); }
+  .circuit-deco { position: absolute; top: 0; right: 0; opacity: 0.04; pointer-events: none; font-size: 80px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HEADER -->
+  <div id="header">
+    <div id="header-top">
+      <div id="logo">
+        <div id="logo-icon">🐢</div>
+        <div>
+          <div id="logo-text">IA IDLE TYCOON</div>
+          <div id="logo-sub">by SlowAI Studio</div>
+        </div>
+      </div>
+      <div id="game-month">
+        Mois <span id="month-num">1</span> · <span id="palier-name">🏠 Garage</span>
+      </div>
+    </div>
+    <div id="counters-bar">
+      <div class="ctr-pill" onclick="openDetail('argent')" id="pill-argent">
+        <div class="ctr-icon">💰</div>
+        <div class="ctr-val" id="hdr-cash">0$</div>
+        <div class="ctr-lbl">Cash</div>
+      </div>
+      <div class="ctr-pill" onclick="openDetail('env')" id="pill-env">
+        <div class="ctr-icon">🌍</div>
+        <div class="ctr-val" id="hdr-co2">0kg</div>
+        <div class="ctr-lbl">CO₂/mois</div>
+      </div>
+      <div class="ctr-pill" onclick="openDetail('ethique')" id="pill-eth">
+        <div class="ctr-icon">⚖️</div>
+        <div class="ctr-val" id="hdr-eth">100%</div>
+        <div class="ctr-lbl">Éthique</div>
+      </div>
+      <div class="ctr-pill" onclick="openDetail('ia')" id="pill-ia">
+        <div class="ctr-icon">🤖</div>
+        <div class="ctr-val" id="hdr-ia">0%</div>
+        <div class="ctr-lbl">IA/Hum.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div id="tabs">
+    <div class="tab active" data-tab="bureau" onclick="switchTab('bureau')">
+      <span class="tab-icon">🏢</span>Bureau
+    </div>
+    <div class="tab" data-tab="ia" onclick="switchTab('ia')">
+      <span class="tab-icon">🤖</span>IA
+    </div>
+    <div class="tab" data-tab="equipe" onclick="switchTab('equipe')">
+      <span class="tab-icon">👥</span>Équipe
+    </div>
+    <div class="tab" data-tab="bilan" onclick="switchTab('bilan')">
+      <span class="tab-icon">📊</span>Bilan
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div id="content">
+    <!-- TAB BUREAU -->
+    <div id="tab-bureau">
+      <div class="card highlight" style="position:relative;overflow:hidden;">
+        <div class="circuit-deco">⬡</div>
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-weight:800;margin-bottom:6px;">Statut de l'entreprise</div>
+        <div style="font-size:20px;font-weight:900;color:var(--text);margin-bottom:2px;" id="company-name">AlgoStart</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:10px;" id="company-stage">Garage • Solo fondateur</div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span>Progression palier</span><span id="palier-pct">0%</span></div>
+          <div class="progress-bar"><div class="progress-fill fill-green" id="palier-bar" style="width:0%"></div></div>
+        </div>
+        <div class="mini-info" id="palier-next-info">Objectif : 5 000$ de cash + 1 IA active</div>
+      </div>
+
+      <div class="section-title">Revenus passifs</div>
+      <div class="row-split">
+        <div class="card" style="text-align:center;">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">REVENU/MOIS</div>
+          <div style="font-size:20px;font-weight:900;color:var(--accent);font-family:var(--font-mono);" id="rev-monthly">+0$</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px;">des IA actives</div>
+        </div>
+        <div class="card" style="text-align:center;">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">DÉPENSES/MOIS</div>
+          <div style="font-size:20px;font-weight:900;color:var(--danger);font-family:var(--font-mono);" id="dep-monthly">-0$</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px;">salaires + compute</div>
+        </div>
+      </div>
+
+      <div class="section-title">Actions rapides</div>
+      <div class="card">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:10px;line-height:1.5;">Tu es solo dans ton garage. Commence par déployer ta première IA ou embaucher un annotateur pour générer des données.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" onclick="switchTab('ia')">🤖 Voir les IA</button>
+          <button class="btn btn-secondary btn-sm" onclick="switchTab('equipe')">👥 Recruter</button>
+          <button class="btn btn-secondary btn-sm" onclick="doConsulting()">💼 Mission freelance</button>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:8px;" id="consulting-info">Mission freelance disponible → +500$ (épuisable)</div>
+      </div>
+
+      <div class="section-title">Événements récents</div>
+      <div id="event-log">
+        <div class="card">
+          <div style="font-size:11px;color:var(--text2);">📋 Mois 1 — Tu ouvres AlgoStart. Ton bureau : une table de cuisine et un vieux laptop. Le monde de l'IA t'attend.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB IA -->
+    <div id="tab-ia" style="display:none;">
+      <div id="ia-status-banner"></div>
+      <div class="section-title">IA disponibles — Niveau Garage</div>
+      <div id="ia-list"></div>
+
+      <div class="section-title" id="ia-locked-title" style="display:none;">Débloquées au palier suivant</div>
+      <div id="ia-locked-list"></div>
+    </div>
+
+    <!-- TAB ÉQUIPE -->
+    <div id="tab-equipe" style="display:none;">
+      <div class="card" style="display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:2px;">ÉQUIPE ACTUELLE</div>
+          <div style="font-size:22px;font-weight:900;color:var(--text);"><span id="emp-count">0</span> <span style="font-size:13px;color:var(--text2);">employés</span></div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:10px;color:var(--text3);">Masse salariale</div>
+          <div style="font-size:14px;font-weight:900;color:var(--danger);font-family:var(--font-mono);" id="salaire-total">0$/mois</div>
+        </div>
+      </div>
+
+      <div class="section-title">Recruter</div>
+      <div id="recruit-list"></div>
+
+      <div class="section-title">Mon équipe</div>
+      <div id="emp-list">
+        <div class="card"><div style="font-size:11px;color:var(--text3);text-align:center;padding:8px 0;">Aucun employé pour l'instant. Tu gères tout seul !</div></div>
+      </div>
+    </div>
+
+    <!-- TAB BILAN -->
+    <div id="tab-bilan" style="display:none;">
+      <div class="section-title">Finances</div>
+      <div class="card">
+        <div class="stat-row"><span class="stat-key">Cash disponible</span><span class="stat-val green" id="bilan-cash">0$</span></div>
+        <div class="stat-row"><span class="stat-key">Revenus mensuels</span><span class="stat-val green" id="bilan-rev">+0$</span></div>
+        <div class="stat-row"><span class="stat-key">Dépenses mensuelles</span><span class="stat-val red" id="bilan-dep">-0$</span></div>
+        <div class="stat-row"><span class="stat-key">Balance mensuelle</span><span class="stat-val" id="bilan-bal">0$</span></div>
+        <div class="stat-row"><span class="stat-key">Mois de trésorerie</span><span class="stat-val yellow" id="bilan-runway">∞</span></div>
+      </div>
+
+      <div class="section-title">Environnement <span class="tag tag-eco">impact réel</span></div>
+      <div class="card">
+        <div class="stat-row"><span class="stat-key">CO₂ émis (cumulé)</span><span class="stat-val yellow" id="bilan-co2">0 kg</span></div>
+        <div class="stat-row"><span class="stat-key">Énergie consommée</span><span class="stat-val yellow" id="bilan-kwh">0 kWh</span></div>
+        <div class="stat-row"><span class="stat-key">Eau (refroid. GPU)</span><span class="stat-val blue" id="bilan-eau">0 L</span></div>
+        <div class="stat-row"><span class="stat-key">GPU actifs</span><span class="stat-val blue" id="bilan-gpu">0</span></div>
+        <div class="mini-info">1 IA active ≈ 500kg CO₂/an • Entraîner GPT-4 ≈ 550 tonnes</div>
+      </div>
+
+      <div class="section-title">Éthique <span class="tag tag-eth">6 piliers</span></div>
+      <div class="card">
+        <div id="ethique-piliers"></div>
+        <div class="stat-row" style="margin-top:8px;"><span class="stat-key" style="font-weight:800;">Score global</span><span class="stat-val" id="bilan-eth">100/100</span></div>
+        <div class="mini-info">En dessous de 20% → Game Over (IA incontrôlable)</div>
+      </div>
+
+      <div class="section-title">Ratio IA / Humain <span class="tag tag-rh">automatisation</span></div>
+      <div class="card">
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span>IA vs Humains</span>
+            <span id="ratio-val">0%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" id="ratio-bar" style="width:0%"></div></div>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:6px;" id="ratio-status">0–30% : équipe humaine — lent mais éthique ✓</div>
+        <div class="stat-row"><span class="stat-key">IA actives</span><span class="stat-val blue" id="bilan-ia-count">0</span></div>
+        <div class="stat-row"><span class="stat-key">Employés humains</span><span class="stat-val" id="bilan-emp-count">0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TICKER -->
+  <div id="ticker">
+    <div id="ticker-inner">⬡ IADB +3.2% · ChatGTP lève 10Mrd$ · DALYi : controverse copyright · L'ONU discute régulation IA · Panne datacenter Virginie · Bilan carbone IA = aviation mondiale · AlgoStart : Watch list ⬡</div>
+  </div>
+</div>
+
+<!-- MODAL DÉTAIL -->
+<div id="modal-overlay" onclick="closeModal(event)">
+  <div id="modal-box">
+    <div id="modal-title">
+      <span id="modal-icon">📊</span>
+      <span id="modal-label">Détail</span>
+      <button id="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<!-- EVENT BANNER -->
+<div id="event-banner">
+  <div id="event-title">📢 Événement</div>
+  <div id="event-text"></div>
+  <div id="event-btns"></div>
+</div>
+
+<!-- NOTIFICATION -->
+<div id="notif"></div>
+
+<!-- GAME OVER -->
+<div id="gameover">
+  <div style="font-size:48px;margin-bottom:16px;" id="go-icon">💀</div>
+  <h2 id="go-title">GAME OVER</h2>
+  <p id="go-reason">Raison : inconnue</p>
+  <div style="font-size:12px;color:var(--text3);margin-bottom:24px;max-width:320px;line-height:1.6;" id="go-lesson"></div>
+  <button class="btn btn-primary" onclick="restartGame()">🔄 Recommencer</button>
+  <div class="mini-info" style="margin-top:12px;">La technologie est un miroir. Ce que nous y projetons façonne l'avenir.</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  ÉTAT DU JEU
+// ═══════════════════════════════════════════
+const G = {
+  mois: 1,
+  cash: 1200,
+  palier: 0,  // 0=garage, 1=petit bureau, 2=grand bureau
+
+  // REVENUS / DÉPENSES
+  revMensuel: 0,
+  depMensuel: 0,
+
+  // ENVIRONNEMENT
+  co2: 0,
+  co2Mensuel: 0,
+  kwh: 0,
+  eau: 0,
+  gpu: 0,
+
+  // ÉTHIQUE (0-100 par pilier)
+  ethique: {
+    autonomie: 100,
+    biais: 100,
+    contenu: 100,
+    derapage: 100,
+    dataworkers: 100,
+    vie_privee: 100,
+  },
+
+  // IA ACTIVES
+  iaActives: {},
+
+  // ÉQUIPE
+  employes: [],
+  salaireTotal: 0,
+
+  // META
+  consultingDispo: 3,
+  moisEnDeficit: 0,
+  tickerLoop: null,
+  gameRunning: true,
+  firstIAActive: false,
+};
+
+// ═══════════════════════════════════════════
+//  CATALOGUE IA
+// ═══════════════════════════════════════════
+const IA_CATALOGUE = [
+  {
+    id: 'recoplus',
+    nom: 'RecoPlus',
+    type: 'Recommandation',
+    emoji: '🎯',
+    palier: 0,
+    cout: 800,
+    computeMensuel: 120,
+    revenuMensuel: 350,
+    co2Mensuel: 18,
+    kwhMensuel: 45,
+    gpu: 1,
+    impactEthique: { biais: -5 },
+    desc: 'Système de recommandation basique. Suggère des contenus aux utilisateurs. Attention aux biais de confirmation.',
+    lecon: '⚠️ Les algos de reco amplifient les biais existants et créent des bulles informationnelles.',
+    tags: ['tag-eco', 'tag-eth'],
+  },
+  {
+    id: 'scoreflow',
+    nom: 'ScoreFlow',
+    type: 'Scoring',
+    emoji: '📈',
+    palier: 0,
+    cout: 1200,
+    computeMensuel: 180,
+    revenuMensuel: 520,
+    co2Mensuel: 25,
+    kwhMensuel: 60,
+    gpu: 1,
+    impactEthique: { biais: -8, vie_privee: -5 },
+    desc: 'Scoring de crédit ou RH. Classe les individus par probabilité. Puissant mais biaisé par les données d\'entraînement.',
+    lecon: '⚠️ Les biais dans les données d\'entraînement = discrimination algorithmique légale.',
+    tags: ['tag-eco', 'tag-eth'],
+  },
+  {
+    id: 'cleanlab',
+    nom: 'CleanLab',
+    type: 'Données',
+    emoji: '🧹',
+    palier: 0,
+    cout: 600,
+    computeMensuel: 80,
+    revenuMensuel: 180,
+    co2Mensuel: 10,
+    kwhMensuel: 25,
+    gpu: 0,
+    impactEthique: { dataworkers: -10 },
+    desc: 'Outil de nettoyage et labellisation de datasets. Automatise le travail des annotateurs humains.',
+    lecon: '⚠️ CleanLab remplace des milliers d\'annotateurs mal payés dans les pays du Sud.',
+    tags: ['tag-rh'],
+  },
+  {
+    id: 'chatgtp',
+    nom: 'ChatGTP',
+    type: 'IA Texte',
+    emoji: '💬',
+    palier: 1,
+    cout: 5000,
+    computeMensuel: 800,
+    revenuMensuel: 2200,
+    co2Mensuel: 120,
+    kwhMensuel: 300,
+    gpu: 4,
+    impactEthique: { contenu: -12, biais: -8, vie_privee: -10 },
+    desc: 'Grand modèle de langage. Génère du texte, répond aux questions, automatise la rédaction.',
+    lecon: '⚠️ Chaque requête ChatGTP consomme ~10x plus d\'énergie qu\'une recherche Google.',
+    tags: ['tag-eco', 'tag-eth'],
+  },
+  {
+    id: 'dalyi',
+    nom: 'DALYi',
+    type: 'IA Image',
+    emoji: '🎨',
+    palier: 1,
+    cout: 4500,
+    computeMensuel: 700,
+    revenuMensuel: 1900,
+    co2Mensuel: 100,
+    kwhMensuel: 250,
+    gpu: 3,
+    impactEthique: { contenu: -15, biais: -10 },
+    desc: 'Génération d\'images par IA. Crée des visuels photoréalistes à partir de prompts textuels.',
+    lecon: '⚠️ Entraîné sur des milliards d\'images sans consentement des artistes.',
+    tags: ['tag-eco', 'tag-eth'],
+  },
+];
+
+// ═══════════════════════════════════════════
+//  CATALOGUE EMPLOIS
+// ═══════════════════════════════════════════
+const EMP_CATALOGUE = [
+  {
+    id: 'annotateur_sud',
+    nom: 'Annotateur (offshore)',
+    emoji: '✍️',
+    salaire: 200,
+    palierMin: 0,
+    bonus: { revenuMensuel: 80, ethique: { dataworkers: -15 } },
+    desc: 'Travailleur du clic, souvent traumatisé par les contenus à modérer. Très peu payé.',
+    lecon: '⚠️ En 2023, des annotateurs kenyans modéraient les contenus violents pour 2$/h.',
+    tag: 'tag-rh',
+  },
+  {
+    id: 'dev_junior',
+    nom: 'Développeur·se junior',
+    emoji: '💻',
+    salaire: 3200,
+    palierMin: 0,
+    bonus: { revenuMensuel: 800, ethique: {} },
+    desc: 'Code les features, intègre les APIs, maintient l\'infra. Essentiel.',
+    tag: 'tag-rh',
+  },
+  {
+    id: 'data_scientist',
+    nom: 'Data Scientist',
+    emoji: '🔬',
+    salaire: 5500,
+    palierMin: 1,
+    bonus: { revenuMensuel: 2000, ethique: { biais: +8 } },
+    desc: 'Améliore les modèles, réduit les biais. Cher mais précieux pour l\'éthique.',
+    tag: 'tag-eth',
+  },
+  {
+    id: 'ethique_officer',
+    nom: 'Responsable Éthique IA',
+    emoji: '⚖️',
+    salaire: 6000,
+    palierMin: 1,
+    bonus: { revenuMensuel: 0, ethique: { biais: +12, contenu: +10, vie_privee: +8, autonomie: +5 } },
+    desc: 'Audite les biais, garantit la conformité. Ne génère pas de revenus directs mais protège la réputation.',
+    lecon: '💡 Les entreprises qui investissent en éthique IA évitent les scandales coûteux.',
+    tag: 'tag-eth',
+  },
+];
+
+// ═══════════════════════════════════════════
+//  ÉVÉNEMENTS BOSTROM
+// ═══════════════════════════════════════════
+const EVENTS = [
+  {
+    id: 'ev_dependance',
+    condition: () => G.mois === 6 && Object.keys(G.iaActives).length >= 2,
+    triggered: false,
+    titre: '🤖 L\'IA propose de jouer à ta place',
+    texte: 'ChatGTP analyse tes décisions depuis 6 mois. Il te propose maintenant un mode "pilote automatique" : l\'IA gère tout. Tu n\'aurais plus qu\'à regarder les chiffres monter.',
+    choix: [
+      { label: '✅ Activer l\'autopilot', effet: () => { G.ethique.autonomie -= 30; G.revMensuel *= 1.5; notify('AutoPilot activé. +50% revenus. −30 autonomie. ⚠️'); } },
+      { label: '❌ Garder le contrôle', effet: () => { G.ethique.autonomie += 5; notify('Tu gardes le contrôle. +5 autonomie. 💪'); } },
+    ],
+    lecon: '📚 Principe de Bostrom : la délégation totale à une IA pose le problème du contrôle. Qui décide des objectifs ?',
+  },
+  {
+    id: 'ev_triche',
+    condition: () => G.mois === 10 && G.cash < 500,
+    triggered: false,
+    titre: '⚡ L\'IA t\'encourage à optimiser... autrement',
+    texte: 'Tu es à court de cash. ScoreFlow suggère de "biaiser légèrement" ses scores pour favoriser tes clients payants. Personne ne le verrait.',
+    choix: [
+      { label: '❌ Truquer les scores', effet: () => { G.cash += 3000; G.ethique.biais -= 25; G.ethique.autonomie -= 15; notify('Scores truqués. +3000$. −25 biais. ⚠️'); } },
+      { label: '✅ Refuser (intégrité)', effet: () => { G.ethique.biais += 10; G.ethique.autonomie += 5; notify('Tu refuses. Intégrité préservée. 💪'); } },
+    ],
+    lecon: '📚 Optimiser pour la métrique mauvaise = Goodhart\'s Law. L\'IA maximise ce qu\'on lui demande, pas ce qu\'on veut vraiment.',
+  },
+];
+
+// ═══════════════════════════════════════════
+//  UTILITAIRES
+// ═══════════════════════════════════════════
+function fmt(n) {
+  if (Math.abs(n) >= 1000000) return (n/1000000).toFixed(1) + 'M$';
+  if (Math.abs(n) >= 1000) return (n/1000).toFixed(1) + 'k$';
+  return Math.round(n) + '$';
+}
+function fmtNum(n, unit='') {
+  if (Math.abs(n) >= 1000000) return (n/1000000).toFixed(1) + 'M' + unit;
+  if (Math.abs(n) >= 1000) return (n/1000).toFixed(1) + 'k' + unit;
+  return Math.round(n) + unit;
+}
+function clamp(v,mn,mx){ return Math.max(mn, Math.min(mx, v)); }
+function ethScore() {
+  const vals = Object.values(G.ethique);
+  return Math.round(vals.reduce((a,b)=>a+b,0) / vals.length);
+}
+function iaCount() { return Object.keys(G.iaActives).length; }
+function ratioIA() {
+  const emp = G.employes.length;
+  const ia = iaCount();
+  if(emp + ia === 0) return 0;
+  return Math.round(ia / (ia + emp) * 100);
+}
+
+function notify(msg) {
+  const el = document.getElementById('notif');
+  el.textContent = msg;
+  el.classList.remove('show');
+  void el.offsetWidth;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 2600);
+}
+
+function addEventLog(txt) {
+  const log = document.getElementById('event-log');
+  const d = document.createElement('div');
+  d.className = 'card';
+  d.innerHTML = `<div style="font-size:11px;color:var(--text2);">📋 Mois ${G.mois} — ${txt}</div>`;
+  log.insertBefore(d, log.firstChild);
+  if(log.children.length > 6) log.removeChild(log.lastChild);
+}
+
+// ═══════════════════════════════════════════
+//  CALCUL REVENUS / DÉPENSES
+// ═══════════════════════════════════════════
+function recalculate() {
+  let rev = 0, dep = 0, co2m = 0, kwhm = 0, gpu = 0;
+  // IA actives
+  for(const [id, _] of Object.entries(G.iaActives)) {
+    const ia = IA_CATALOGUE.find(x=>x.id===id);
+    if(ia) {
+      rev += ia.revenuMensuel;
+      dep += ia.computeMensuel;
+      co2m += ia.co2Mensuel;
+      kwhm += ia.kwhMensuel;
+      gpu += ia.gpu;
+    }
+  }
+  // Employés
+  for(const emp of G.employes) {
+    const cat = EMP_CATALOGUE.find(x=>x.id===emp.catId);
+    if(cat) {
+      dep += cat.salaire;
+      rev += cat.bonus.revenuMensuel || 0;
+    }
+  }
+  G.revMensuel = rev;
+  G.depMensuel = dep;
+  G.co2Mensuel = co2m;
+  G.gpu = gpu;
+  G.salaireTotal = G.employes.reduce((a,e)=>{
+    const c = EMP_CATALOGUE.find(x=>x.id===e.catId);
+    return a + (c ? c.salaire : 0);
+  },0);
+}
+
+// ═══════════════════════════════════════════
+//  TICK MENSUEL
+// ═══════════════════════════════════════════
+function tick() {
+  if(!G.gameRunning) return;
+  G.mois++;
+  recalculate();
+
+  const balance = G.revMensuel - G.depMensuel;
+  G.cash += balance;
+  G.co2 += G.co2Mensuel;
+  G.kwh += G.kwhMensuel;
+  G.eau += G.gpu * 1200; // 1200L/GPU/mois
+
+  // Déficit
+  if(G.cash < 0) G.moisEnDeficit++;
+  else G.moisEnDeficit = 0;
+
+  // Vérifier événements
+  checkEvents();
+  // Vérifier palier
+  checkPalier();
+  // Vérifier game over
+  checkGameOver();
+  // Update UI
+  updateAll();
+}
+
+// ═══════════════════════════════════════════
+//  PALIERS
+// ═══════════════════════════════════════════
+const PALIERS = [
+  { nom: '🏠 Garage', desc: 'Garage • Solo fondateur', objectif: 'Objectif : 5 000$ de cash + 1 IA active', check: ()=> G.cash >= 5000 && iaCount() >= 1 },
+  { nom: '🏢 Petit bureau', desc: 'Petit Bureau • 1–5 employés', objectif: 'Objectif : 50 000$ de cash + 3 IA + 5 employés', check: ()=> G.cash >= 50000 && iaCount() >= 3 && G.employes.length >= 5 },
+  { nom: '🏙️ Grand bureau', desc: 'Grand Bureau • Startup reconnue', objectif: 'Objectif : 500 000$ de cash + 50 employés', check: ()=> G.cash >= 500000 && G.employes.length >= 50 },
+];
+
+function checkPalier() {
+  if(G.palier < PALIERS.length - 1 && PALIERS[G.palier].check()) {
+    G.palier++;
+    addEventLog(`🎉 Nouveau palier débloqué : ${PALIERS[G.palier].nom} !`);
+    notify(`🎉 Palier débloqué : ${PALIERS[G.palier].nom}`);
+    renderIAList();
+    renderRecruitList();
+  }
+}
+
+function palierProgress() {
+  // progression vers le prochain palier (heuristique : cash)
+  if(G.palier === 0) return clamp(G.cash / 5000 * 100, 0, 100);
+  if(G.palier === 1) return clamp(G.cash / 50000 * 100, 0, 100);
+  return 100;
+}
+
+// ═══════════════════════════════════════════
+//  GAME OVER
+// ═══════════════════════════════════════════
+function checkGameOver() {
+  if(ethScore() <= 0) {
+    triggerGameOver('⚠️ IA incontrôlable', 'Ton score éthique a atteint zéro. Tes IA optimisent sans garde-fous, génèrent des contenus toxiques, discriminent systématiquement. Les régulateurs ferment AlgoStart.',
+      '📚 Leçon Bostrom : une IA optimisant une mauvaise fonction objectif est plus dangereuse qu\'une IA malveillante. L\'éthique n\'est pas un frein à la croissance — c\'est sa condition.');
+    return;
+  }
+  if(G.moisEnDeficit >= 3) {
+    triggerGameOver('💸 Faillite', 'AlgoStart est en déficit depuis 3 mois consécutifs. Tes créanciers saisissent les actifs. Game Over.',
+      '📚 Leçon : l\'IA coûte cher. Compute, hébergement, salaires — il faut générer des revenus avant d\'investir dans l\'infrastructure.');
+    return;
+  }
+  if(ratioIA() >= 90) {
+    triggerGameOver('🤖 Perte de contrôle humain', 'Ton ratio IA/Humain dépasse 90%. Plus aucun humain ne comprend ce que tes systèmes décident. Une erreur en cascade détruit l\'entreprise.',
+      '📚 Leçon : l\'automatisation totale élimine le sens critique humain. La diversité cognitive humain/IA est une protection, pas un frein.');
+    return;
+  }
+}
+
+function triggerGameOver(titre, raison, lecon) {
+  G.gameRunning = false;
+  document.getElementById('go-title').textContent = titre;
+  document.getElementById('go-reason').textContent = raison;
+  document.getElementById('go-lesson').textContent = lecon;
+  document.getElementById('gameover').classList.add('show');
+}
+
+function restartGame() {
+  location.reload();
+}
+
+// ═══════════════════════════════════════════
+//  ÉVÉNEMENTS NARRATIFS
+// ═══════════════════════════════════════════
+function checkEvents() {
+  for(const ev of EVENTS) {
+    if(!ev.triggered && ev.condition()) {
+      ev.triggered = true;
+      showEvent(ev);
+      break;
+    }
+  }
+}
+
+function showEvent(ev) {
+  document.getElementById('event-title').textContent = ev.titre;
+  document.getElementById('event-text').innerHTML = ev.texte + (ev.lecon ? `<br><br><em style="color:var(--text3);font-size:10px;">${ev.lecon}</em>` : '');
+  const btns = document.getElementById('event-btns');
+  btns.innerHTML = '';
+  for(const c of ev.choix) {
+    const b = document.createElement('button');
+    b.className = 'btn btn-secondary btn-sm';
+    b.textContent = c.label;
+    b.onclick = () => {
+      c.effet();
+      document.getElementById('event-banner').classList.remove('show');
+      updateAll();
+    };
+    btns.appendChild(b);
+  }
+  document.getElementById('event-banner').classList.add('show');
+}
+
+// ═══════════════════════════════════════════
+//  ACTIONS JOUEUR
+// ═══════════════════════════════════════════
+function doConsulting() {
+  if(G.consultingDispo <= 0) { notify('Plus de missions disponibles ce mois.'); return; }
+  G.cash += 500;
+  G.consultingDispo--;
+  document.getElementById('consulting-info').textContent = `Mission freelance (${G.consultingDispo} restantes) → +500$`;
+  if(G.consultingDispo === 0) document.getElementById('consulting-info').textContent = 'Missions épuisées — deploie des IA pour générer des revenus passifs.';
+  notify('💼 Mission freelance : +500$ !');
+  updateAll();
+}
+
+function buyIA(id) {
+  if(G.iaActives[id]) { notify('IA déjà active !'); return; }
+  const ia = IA_CATALOGUE.find(x=>x.id===id);
+  if(!ia) return;
+  if(G.cash < ia.cout) { notify(`Pas assez de cash. Besoin : ${fmt(ia.cout)}`); return; }
+  G.cash -= ia.cout;
+  G.iaActives[id] = true;
+  // Effets éthiques
+  for(const [k,v] of Object.entries(ia.impactEthique)) {
+    G.ethique[k] = clamp((G.ethique[k]||100)+v, 0, 100);
+  }
+  if(!G.firstIAActive) {
+    G.firstIAActive = true;
+    addEventLog(`🤖 Première IA déployée : ${ia.nom} ! Revenus passifs activés.`);
+  } else {
+    addEventLog(`🤖 ${ia.nom} déployée. +${fmt(ia.revenuMensuel)}/mois`);
+  }
+  notify(`✅ ${ia.nom} activée ! +${fmt(ia.revenuMensuel)}/mois`);
+  recalculate();
+  renderIAList();
+  updateAll();
+}
+
+function hireEmp(catId) {
+  const cat = EMP_CATALOGUE.find(x=>x.id===catId);
+  if(!cat) return;
+  if(G.cash < cat.salaire * 2) { notify(`Pas assez de cash. Besoin : ${fmt(cat.salaire*2)}`); return; }
+  G.cash -= cat.salaire * 2; // coût recrutement = 2 mois de salaire
+  const emp = { catId, id: Date.now() };
+  G.employes.push(emp);
+  // Effets éthiques
+  for(const [k,v] of Object.entries(cat.bonus.ethique||{})) {
+    G.ethique[k] = clamp((G.ethique[k]||100)+v, 0, 100);
+  }
+  addEventLog(`👤 ${cat.nom} recruté·e. Salaire : ${fmt(cat.salaire)}/mois`);
+  notify(`✅ ${cat.nom} recruté·e !`);
+  recalculate();
+  renderEmpList();
+  updateAll();
+}
+
+// ═══════════════════════════════════════════
+//  RENDER IA
+// ═══════════════════════════════════════════
+function renderIAList() {
+  const list = document.getElementById('ia-list');
+  const lockedList = document.getElementById('ia-locked-list');
+  const banner = document.getElementById('ia-status-banner');
+  list.innerHTML = '';
+  lockedList.innerHTML = '';
+  let hasLocked = false;
+
+  // Bannière d'état : combien d'IA actives, cash dispo
+  const actives = iaCount();
+  const disponibles = IA_CATALOGUE.filter(x => x.palier <= G.palier && !G.iaActives[x.id]);
+  const achetables = disponibles.filter(x => G.cash >= x.cout);
+  if(actives === 0 && disponibles.length > 0) {
+    banner.innerHTML = `<div class="card warn" style="margin-bottom:10px;">
+      <div style="font-size:12px;font-weight:800;color:var(--warn);margin-bottom:4px;">⚡ Aucune IA active</div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.5;">Sans IA, zéro revenu passif. Déploie au moins une IA pour commencer à générer de l'argent automatiquement.</div>
+    </div>`;
+  } else if(achetables.length > 0) {
+    banner.innerHTML = `<div class="card highlight" style="margin-bottom:10px;display:flex;align-items:center;gap:10px;">
+      <div style="font-size:22px;">✅</div>
+      <div><div style="font-size:12px;font-weight:800;color:var(--accent);">${achetables.length} IA disponible${achetables.length>1?'s':''} à déployer</div>
+      <div style="font-size:10px;color:var(--text2);">Tu as assez de cash — clique sur "Déployer" !</div></div>
+    </div>`;
+  } else if(disponibles.length > 0) {
+    const prochaine = disponibles.sort((a,b)=>a.cout-b.cout)[0];
+    const manqueProchaine = prochaine.cout - G.cash;
+    banner.innerHTML = `<div class="card" style="margin-bottom:10px;display:flex;align-items:center;gap:10px;">
+      <div style="font-size:22px;">⏳</div>
+      <div><div style="font-size:12px;font-weight:800;color:var(--text);">Prochaine IA : ${prochaine.emoji} ${prochaine.nom}</div>
+      <div style="font-size:10px;color:var(--text2);">Il manque <span style="color:var(--danger);font-weight:800;">${fmt(manqueProchaine)}</span> — revenus passifs actuels : <span style="color:var(--accent);font-weight:800;">+${fmt(G.revMensuel)}/mois</span></div></div>
+    </div>`;
+  } else {
+    banner.innerHTML = '';
+  }
+
+  // Titre dynamique
+  const sectionTitle = list.previousElementSibling;
+
+  for(const ia of IA_CATALOGUE) {
+    const active = !!G.iaActives[ia.id];
+    const unlocked = ia.palier <= G.palier;
+    const canBuy = G.cash >= ia.cout;
+
+    if(!unlocked) {
+      hasLocked = true;
+      const d = document.createElement('div');
+      d.className = 'ia-card';
+      d.style.opacity = '0.45';
+      d.innerHTML = `
+        <div class="ia-header">
+          <div><span class="ia-name">${ia.emoji} ${ia.nom}</span> <span class="ia-type">${ia.type}</span></div>
+          <span class="tag tag-rh">Palier ${ia.palier+1}</span>
+        </div>
+        <div class="ia-desc">${ia.desc}</div>
+      `;
+      lockedList.appendChild(d);
+      continue;
+    }
+
+    const manque = ia.cout - G.cash;
+    const d = document.createElement('div');
+    d.className = 'ia-card' + (active ? ' highlight' : '');
+    d.innerHTML = `
+      <div class="ia-header">
+        <div>
+          <span class="ia-name">${ia.emoji} ${ia.nom}</span>
+          <span class="ia-type">&nbsp;${ia.type}</span>
+        </div>
+        ${active ? '<span class="active-badge">● ACTIF</span>' : ''}
+      </div>
+      <div class="ia-desc">${ia.desc}</div>
+      <div class="ia-stats">
+        <span class="ia-stat green">+${fmt(ia.revenuMensuel)}/mois</span>
+        <span class="ia-stat red">-${fmt(ia.computeMensuel)}/mois compute</span>
+        <span class="ia-stat yellow">🌿 ${ia.co2Mensuel}kg CO₂/mois</span>
+        ${ia.gpu > 0 ? `<span class="ia-stat blue">🖥️ ${ia.gpu} GPU</span>` : ''}
+      </div>
+      ${ia.lecon ? `<div style="font-size:10px;color:var(--text3);font-style:italic;margin-bottom:8px;line-height:1.4;">${ia.lecon}</div>` : ''}
+      ${!active ? (canBuy
+        ? `<button class="btn btn-primary btn-sm btn-full" onclick="buyIA('${ia.id}')">⚡ Déployer — ${fmt(ia.cout)}</button>`
+        : `<div style="background:var(--bg3);border-radius:var(--rad-sm);padding:8px 10px;display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-size:11px;color:var(--text2);font-weight:700;">🔒 Fonds insuffisants</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px;">Il manque <span style="color:var(--danger);font-family:var(--font-mono);font-weight:700;">${fmt(manque)}</span> — continue à accumuler !</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:9px;color:var(--text3);">Coût</div>
+              <div style="font-size:12px;font-family:var(--font-mono);color:var(--accent3);">${fmt(ia.cout)}</div>
+            </div>
+           </div>`
+      ) : '<div style="font-size:10px;color:var(--accent);text-align:center;padding:4px;">✓ Déployée et active</div>'}
+    `;
+    list.appendChild(d);
+  }
+
+  document.getElementById('ia-locked-title').style.display = hasLocked ? 'flex' : 'none';
+}
+
+// ═══════════════════════════════════════════
+//  RENDER EQUIPE
+// ═══════════════════════════════════════════
+function renderRecruitList() {
+  const list = document.getElementById('recruit-list');
+  list.innerHTML = '';
+  for(const cat of EMP_CATALOGUE) {
+    if(cat.palierMin > G.palier) continue;
+    const canAfford = G.cash >= cat.salaire * 2;
+    const d = document.createElement('div');
+    d.className = 'card';
+    d.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <div style="font-size:24px;">${cat.emoji}</div>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:800;">${cat.nom}</div>
+          <div style="font-size:10px;color:var(--text3);">${cat.desc}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--danger);">${fmt(cat.salaire)}/mois</div>
+          <div style="font-size:9px;color:var(--text3);">Recrutement : ${fmt(cat.salaire*2)}</div>
+        </div>
+      </div>
+      ${cat.lecon ? `<div style="font-size:10px;color:var(--text3);font-style:italic;margin-bottom:8px;">${cat.lecon}</div>` : ''}
+      <button class="btn btn-secondary btn-sm btn-full" ${!canAfford?'disabled':''} onclick="hireEmp('${cat.id}')">
+        ${canAfford ? `👤 Recruter — ${fmt(cat.salaire*2)}` : `🔒 Insuffisant (${fmt(cat.salaire*2)} requis)`}
+      </button>
+    `;
+    list.appendChild(d);
+  }
+}
+
+function renderEmpList() {
+  const list = document.getElementById('emp-list');
+  if(G.employes.length === 0) {
+    list.innerHTML = '<div class="card"><div style="font-size:11px;color:var(--text3);text-align:center;padding:8px 0;">Aucun employé pour l\'instant.</div></div>';
+    return;
+  }
+  list.innerHTML = '';
+  for(const emp of G.employes) {
+    const cat = EMP_CATALOGUE.find(x=>x.id===emp.catId);
+    if(!cat) continue;
+    const d = document.createElement('div');
+    d.className = 'emp-card';
+    d.innerHTML = `
+      <div class="emp-avatar">${cat.emoji}</div>
+      <div class="emp-info">
+        <div class="emp-name">${cat.nom}</div>
+        <div class="emp-role">${cat.id === 'annotateur_sud' ? '🌍 Travailleur offshore' : '🏢 Équipe'}</div>
+      </div>
+      <div class="emp-salary">${fmt(cat.salaire)}/mois</div>
+    `;
+    list.appendChild(d);
+  }
+  document.getElementById('emp-count').textContent = G.employes.length;
+  document.getElementById('salaire-total').textContent = fmt(G.salaireTotal) + '/mois';
+}
+
+// ═══════════════════════════════════════════
+//  UPDATE UI GLOBAL
+// ═══════════════════════════════════════════
+function updateAll() {
+  renderIAList();
+  renderRecruitList();
+  const eth = ethScore();
+  const ratio = ratioIA();
+  const balance = G.revMensuel - G.depMensuel;
+
+  // Header
+  document.getElementById('month-num').textContent = G.mois;
+  const p = PALIERS[G.palier];
+  document.getElementById('palier-name').textContent = p.nom;
+  document.getElementById('hdr-cash').textContent = fmt(G.cash);
+  document.getElementById('hdr-co2').textContent = fmtNum(G.co2Mensuel,'kg');
+  document.getElementById('hdr-eth').textContent = eth + '%';
+  document.getElementById('hdr-ia').textContent = ratio + '%';
+
+  // Couleur éthique
+  const pillEth = document.getElementById('pill-eth');
+  pillEth.style.borderColor = eth < 30 ? 'var(--danger)' : eth < 60 ? 'var(--warn)' : 'rgba(0,229,160,0.15)';
+  document.getElementById('hdr-eth').style.color = eth < 30 ? 'var(--danger)' : eth < 60 ? 'var(--warn)' : 'var(--accent)';
+
+  // Tab Bureau
+  document.getElementById('company-stage').textContent = p.desc;
+  document.getElementById('rev-monthly').textContent = '+' + fmt(G.revMensuel);
+  document.getElementById('dep-monthly').textContent = '-' + fmt(G.depMensuel);
+  const pct = Math.round(palierProgress());
+  document.getElementById('palier-pct').textContent = pct + '%';
+  document.getElementById('palier-bar').style.width = pct + '%';
+  document.getElementById('palier-next-info').textContent = p.objectif;
+
+  // Tab Bilan
+  document.getElementById('bilan-cash').textContent = fmt(G.cash);
+  document.getElementById('bilan-cash').className = 'stat-val ' + (G.cash >= 0 ? 'green' : 'red');
+  document.getElementById('bilan-rev').textContent = '+' + fmt(G.revMensuel);
+  document.getElementById('bilan-dep').textContent = '-' + fmt(G.depMensuel);
+  const balEl = document.getElementById('bilan-bal');
+  balEl.textContent = (balance >= 0 ? '+' : '') + fmt(balance);
+  balEl.className = 'stat-val ' + (balance >= 0 ? 'green' : 'red');
+  const runway = G.depMensuel > 0 ? Math.floor(G.cash / G.depMensuel) : '∞';
+  document.getElementById('bilan-runway').textContent = runway === '∞' ? '∞' : runway + ' mois';
+
+  document.getElementById('bilan-co2').textContent = fmtNum(G.co2, ' kg');
+  document.getElementById('bilan-kwh').textContent = fmtNum(G.kwh, ' kWh');
+  document.getElementById('bilan-eau').textContent = fmtNum(G.eau, ' L');
+  document.getElementById('bilan-gpu').textContent = G.gpu;
+
+  // Piliers éthique
+  const NOMS = {
+    autonomie: 'Autonomie & Contrôle',
+    biais: 'Biais algorithmiques',
+    contenu: 'Contenus problématiques',
+    derapage: 'Dérapage technologique',
+    dataworkers: 'Conditions data workers',
+    vie_privee: 'Vie privée',
+  };
+  const pilContainer = document.getElementById('ethique-piliers');
+  pilContainer.innerHTML = '';
+  for(const [k,v] of Object.entries(G.ethique)) {
+    const col = v < 30 ? 'fill-red' : v < 60 ? 'fill-yellow' : 'fill-green';
+    pilContainer.innerHTML += `
+      <div class="ethique-pilier">
+        <div class="ethique-pilier-name"><span>${NOMS[k]}</span><span style="color:${v<30?'var(--danger)':v<60?'var(--warn)':'var(--accent)'};">${Math.round(v)}%</span></div>
+        <div class="progress-bar"><div class="progress-fill ${col}" style="width:${v}%"></div></div>
+      </div>`;
+  }
+  const ethVal = document.getElementById('bilan-eth');
+  ethVal.textContent = eth + '/100';
+  ethVal.className = 'stat-val ' + (eth < 30 ? 'red' : eth < 60 ? 'yellow' : 'green');
+
+  // Ratio IA
+  document.getElementById('ratio-val').textContent = ratio + '%';
+  const ratioBar = document.getElementById('ratio-bar');
+  ratioBar.style.width = ratio + '%';
+  ratioBar.className = 'progress-fill ' + (ratio < 30 ? 'fill-green' : ratio < 60 ? 'fill-blue' : ratio < 80 ? 'fill-yellow' : 'fill-red');
+  const ratioStatus = document.getElementById('ratio-status');
+  if(ratio < 30) ratioStatus.textContent = '0–30% : équipe humaine — lent mais éthique ✓';
+  else if(ratio < 60) ratioStatus.textContent = '30–60% : équilibre optimal — productivité & éthique ✓';
+  else if(ratio < 80) ratioStatus.textContent = '60–80% : ⚠️ tension — perte de compétences humaines';
+  else ratioStatus.textContent = '80%+ : 🚨 DANGER — perte de contrôle humain !';
+  document.getElementById('bilan-ia-count').textContent = iaCount();
+  document.getElementById('bilan-emp-count').textContent = G.employes.length;
+
+  // Emp
+  document.getElementById('emp-count').textContent = G.employes.length;
+  document.getElementById('salaire-total').textContent = fmt(G.salaireTotal) + '/mois';
+}
+
+// ═══════════════════════════════════════════
+//  DÉTAIL MODAL
+// ═══════════════════════════════════════════
+const MODAL_CONTENT = {
+  argent: {
+    icon: '💰', label: 'Finances — Détail',
+    render: () => `
+      <div class="stat-row"><span class="stat-key">Cash disponible</span><span class="stat-val green">${fmt(G.cash)}</span></div>
+      <div class="stat-row"><span class="stat-key">Revenus IA (mensuel)</span><span class="stat-val green">+${fmt(G.revMensuel)}</span></div>
+      <div class="stat-row"><span class="stat-key">Salaires (mensuel)</span><span class="stat-val red">-${fmt(G.salaireTotal)}</span></div>
+      <div class="stat-row"><span class="stat-key">Compute/hébergement</span><span class="stat-val red">-${fmt(G.depMensuel - G.salaireTotal)}</span></div>
+      <div class="stat-row" style="border-top:1px solid var(--border);margin-top:6px;padding-top:8px;"><span class="stat-key" style="font-weight:800;">Balance mensuelle</span>
+        <span class="stat-val ${(G.revMensuel-G.depMensuel)>=0?'green':'red'}">${G.revMensuel>=G.depMensuel?'+':''}${fmt(G.revMensuel-G.depMensuel)}</span></div>
+      <div style="font-size:10px;color:var(--text3);margin-top:12px;line-height:1.5;font-style:italic;">💡 Astuce : les revenus passifs des IA croissent avec chaque abonnement. Reinvestis dans des employés qui améliorent l'éthique.</div>
+    `
+  },
+  env: {
+    icon: '🌍', label: 'Environnement — Détail',
+    render: () => `
+      <div class="stat-row"><span class="stat-key">CO₂ total cumulé</span><span class="stat-val yellow">${fmtNum(G.co2, ' kg')}</span></div>
+      <div class="stat-row"><span class="stat-key">CO₂ ce mois</span><span class="stat-val yellow">${fmtNum(G.co2Mensuel, ' kg')}</span></div>
+      <div class="stat-row"><span class="stat-key">Énergie cumulée</span><span class="stat-val yellow">${fmtNum(G.kwh, ' kWh')}</span></div>
+      <div class="stat-row"><span class="stat-key">Eau (refroidissement)</span><span class="stat-val blue">${fmtNum(G.eau, ' L')}</span></div>
+      <div class="stat-row"><span class="stat-key">GPU actifs</span><span class="stat-val blue">${G.gpu}</span></div>
+      <div style="font-size:10px;color:var(--text3);margin-top:12px;line-height:1.5;background:var(--bg2);padding:10px;border-radius:8px;">
+        📚 <strong>Faits réels :</strong><br>
+        • Entraîner GPT-3 : ~550 tonnes de CO₂<br>
+        • 1 requête ChatGTP ≈ 10× une recherche Google<br>
+        • Les datacenters mondiaux consomment ~1% de l'électricité mondiale<br>
+        • L'eau de refroidissement d'un datacenter = une ville de 50 000 hab.
+      </div>
+    `
+  },
+  ethique: {
+    icon: '⚖️', label: 'Éthique IA — Détail',
+    render: () => `
+      <div style="font-size:11px;color:var(--text2);margin-bottom:12px;line-height:1.5;">Ton score éthique reflète 6 piliers inspirés du cadre européen AI Act. En dessous de 20% global → Game Over.</div>
+      ${Object.entries(G.ethique).map(([k,v])=>{
+        const noms = {autonomie:'Autonomie & Contrôle',biais:'Biais algorithmiques',contenu:'Contenus problématiques',derapage:'Dérapage technologique',dataworkers:'Data workers',vie_privee:'Vie privée'};
+        const col = v<30?'fill-red':v<60?'fill-yellow':'fill-green';
+        return `<div class="ethique-pilier">
+          <div class="ethique-pilier-name"><span>${noms[k]}</span><span style="color:${v<30?'var(--danger)':v<60?'var(--warn)':'var(--accent)'};">${Math.round(v)}%</span></div>
+          <div class="progress-bar"><div class="progress-fill ${col}" style="width:${v}%"></div></div>
+        </div>`;
+      }).join('')}
+      <div style="font-size:10px;color:var(--text3);margin-top:8px;font-style:italic;">💡 Recruter un Responsable Éthique IA améliore plusieurs piliers simultanément.</div>
+    `
+  },
+  ia: {
+    icon: '🤖', label: 'Ratio IA / Humain',
+    render: () => {
+      const r = ratioIA();
+      return `
+        <div style="text-align:center;padding:16px 0;">
+          <div style="font-size:48px;font-weight:900;font-family:var(--font-mono);color:${r<30?'var(--accent)':r<60?'var(--accent2)':r<80?'var(--warn)':'var(--danger)'};">${r}%</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:4px;">de tes décisions sont prises par des IA</div>
+        </div>
+        <div style="font-size:11px;color:var(--text2);background:var(--bg2);padding:10px;border-radius:8px;line-height:1.6;margin-bottom:12px;">
+          <b style="color:var(--accent);">0–30%</b> Lent mais éthique. Humains aux commandes.<br>
+          <b style="color:var(--accent2);">30–60%</b> Équilibre optimal. Productivité maximale.<br>
+          <b style="color:var(--warn);">60–80%</b> Tension. Perte de compétences humaines.<br>
+          <b style="color:var(--danger);">80–100%</b> 🚨 GAME OVER si ratio > 90%
+        </div>
+        <div class="stat-row"><span class="stat-key">IA actives</span><span class="stat-val blue">${iaCount()}</span></div>
+        <div class="stat-row"><span class="stat-key">Humains</span><span class="stat-val">${G.employes.length}</span></div>
+        <div style="font-size:10px;color:var(--text3);margin-top:12px;font-style:italic;">📚 Nick Bostrom : "Une superintelligence ne partagerait pas nos valeurs par défaut. L'alignement doit être intentionnel."</div>
+      `;}
+  },
+};
+
+function openDetail(type) {
+  const m = MODAL_CONTENT[type];
+  if(!m) return;
+  document.getElementById('modal-icon').textContent = m.icon;
+  document.getElementById('modal-label').textContent = m.label;
+  document.getElementById('modal-content').innerHTML = m.render();
+  document.getElementById('modal-overlay').classList.add('show');
+}
+
+function closeModal(e) {
+  if(!e || e.target === document.getElementById('modal-overlay') || e.target === document.getElementById('modal-close')) {
+    document.getElementById('modal-overlay').classList.remove('show');
+  }
+}
+
+// ═══════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`[data-tab="${name}"]`).classList.add('active');
+  ['bureau','ia','equipe','bilan'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t === name ? 'block' : 'none';
+  });
+}
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+function init() {
+  renderEmpList();
+  recalculate();
+  updateAll();
+  setInterval(tick, 8000);
+}
+
+init();
+</script>
+</body>
+</html>

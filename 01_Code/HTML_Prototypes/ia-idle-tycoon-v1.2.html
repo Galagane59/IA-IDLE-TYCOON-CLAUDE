@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>IA Idle Tycoon — SlowAI Studio v1.2</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg0:#0a0d12; --bg1:#111520; --bg2:#161c2e; --bg3:#1e2640;
+    --accent:#00e5a0; --accent2:#00b8d9; --accent3:#f5c542;
+    --danger:#ff4d6d; --warn:#ff9f1c; --purple:#a78bfa;
+    --text:#e8edf7; --text2:#8a95b0; --text3:#4a5470;
+    --border:rgba(0,229,160,0.15); --border2:rgba(0,184,217,0.2);
+    --font-mono:'Space Mono',monospace; --font-main:'Nunito',sans-serif;
+    --rad:12px; --rad-sm:8px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{width:100%;height:100%;overflow:hidden;background:var(--bg0);font-family:var(--font-main);color:var(--text)}
+  #app{width:100%;height:100vh;display:flex;flex-direction:column;max-width:480px;margin:0 auto;position:relative;overflow:hidden}
+
+  /* HEADER */
+  #header{background:var(--bg1);border-bottom:1px solid var(--border);padding:10px 14px 8px;flex-shrink:0}
+  #header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  #logo{display:flex;align-items:center;gap:8px}
+  #logo-icon{font-size:22px;line-height:1}
+  #logo-text{font-size:13px;font-weight:900;color:var(--accent);letter-spacing:.5px}
+  #logo-sub{font-size:9px;color:var(--text3);font-family:var(--font-mono)}
+  #game-month{font-family:var(--font-mono);font-size:11px;color:var(--text2);text-align:right}
+  #game-month span{color:var(--accent3);font-weight:700}
+  #counters-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  .ctr-pill{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rad-sm);padding:5px 6px;cursor:pointer;transition:border-color .2s,background .2s}
+  .ctr-pill:hover{border-color:var(--accent);background:var(--bg3)}
+  .ctr-pill .ctr-icon{font-size:14px;line-height:1}
+  .ctr-pill .ctr-val{font-family:var(--font-mono);font-size:10px;font-weight:700;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ctr-pill .ctr-lbl{font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
+
+  /* TABS */
+  #tabs{display:flex;background:var(--bg1);border-bottom:1px solid var(--border);flex-shrink:0}
+  .tab{flex:1;padding:10px 4px;text-align:center;font-size:10px;font-weight:700;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;letter-spacing:.5px;text-transform:uppercase}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .tab .tab-icon{font-size:16px;display:block;margin-bottom:2px}
+
+  /* CONTENT */
+  #content{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:12px;background:var(--bg0)}
+  #content::-webkit-scrollbar{width:3px}
+  #content::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+  .section-title{font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;display:flex;align-items:center;gap:6px}
+  .section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+  .card{background:var(--bg1);border:1px solid var(--border);border-radius:var(--rad);padding:12px;margin-bottom:8px}
+  .card.highlight{border-color:var(--accent)}
+  .card.warn{border-color:var(--warn)}
+  .card.danger{border-color:var(--danger)}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:var(--rad-sm);font-family:var(--font-main);font-size:13px;font-weight:800;cursor:pointer;border:1.5px solid;transition:all .15s;user-select:none}
+  .btn:active{transform:scale(.96)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);color:var(--bg0)}
+  .btn-primary:disabled{opacity:.35;cursor:not-allowed}
+  .btn-secondary{background:transparent;border-color:var(--border2);color:var(--accent2)}
+  .btn-secondary:disabled{opacity:.35;cursor:not-allowed}
+  .btn-full{width:100%}
+  .btn-sm{padding:5px 10px;font-size:11px}
+  .ia-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rad);padding:11px 12px;margin-bottom:8px}
+  .ia-card .ia-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .ia-card .ia-name{font-size:13px;font-weight:900;color:var(--accent)}
+  .ia-card .ia-type{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-family:var(--font-mono)}
+  .ia-card .ia-desc{font-size:11px;color:var(--text2);margin-bottom:8px;line-height:1.4}
+  .ia-card .ia-stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+  .ia-stat{font-size:10px;font-family:var(--font-mono);background:var(--bg3);border-radius:4px;padding:3px 7px}
+  .ia-stat.green{color:var(--accent)}
+  .ia-stat.red{color:var(--danger)}
+  .ia-stat.yellow{color:var(--accent3)}
+  .ia-stat.blue{color:var(--accent2)}
+  .active-badge{font-size:9px;background:rgba(0,229,160,.15);color:var(--accent);border:1px solid rgba(0,229,160,.3);border-radius:4px;padding:2px 7px;font-weight:700}
+  .emp-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rad);padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+  .emp-avatar{width:36px;height:36px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;border:2px solid var(--border)}
+  .emp-info{flex:1}
+  .emp-name{font-size:12px;font-weight:800;color:var(--text)}
+  .emp-role{font-size:10px;color:var(--text3)}
+  .emp-salary{font-size:10px;font-family:var(--font-mono);color:var(--danger)}
+  .progress-wrap{margin:6px 0}
+  .progress-label{display:flex;justify-content:space-between;margin-bottom:3px}
+  .progress-label span{font-size:10px;color:var(--text2);font-family:var(--font-mono)}
+  .progress-bar{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+  .progress-fill{height:100%;border-radius:3px;transition:width .5s ease}
+  .fill-green{background:var(--accent)}
+  .fill-blue{background:var(--accent2)}
+  .fill-yellow{background:var(--accent3)}
+  .fill-red{background:var(--danger)}
+  .stat-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+  .stat-row:last-child{border-bottom:none}
+  .stat-key{font-size:11px;color:var(--text2)}
+  .stat-val{font-size:11px;font-family:var(--font-mono);font-weight:700}
+  .stat-val.green{color:var(--accent)}
+  .stat-val.red{color:var(--danger)}
+  .stat-val.yellow{color:var(--accent3)}
+  .stat-val.blue{color:var(--accent2)}
+  .tag{font-size:9px;padding:2px 7px;border-radius:4px;font-weight:700;font-family:var(--font-mono)}
+  .tag-eco{background:rgba(0,229,160,.12);color:var(--accent);border:1px solid rgba(0,229,160,.25)}
+  .tag-eth{background:rgba(167,139,250,.12);color:var(--purple);border:1px solid rgba(167,139,250,.25)}
+  .tag-rh{background:rgba(245,197,66,.12);color:var(--accent3);border:1px solid rgba(245,197,66,.25)}
+  .mini-info{font-size:10px;color:var(--text3);text-align:center;margin-top:4px;font-style:italic}
+  .ethique-pilier{margin-bottom:8px}
+  .ethique-pilier-name{font-size:10px;color:var(--text2);margin-bottom:3px;display:flex;justify-content:space-between}
+  .row-split{display:flex;gap:8px;margin-bottom:8px}
+  .row-split>*{flex:1}
+
+  /* BUREAU VISUEL */
+  #bureau-canvas-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rad);overflow:hidden;margin-bottom:8px;position:relative}
+  #bureau-canvas{display:block;width:100%;height:200px}
+  #bureau-legend{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;border-top:1px solid var(--border)}
+  .bureau-leg-item{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--text2)}
+  .bureau-leg-dot{width:8px;height:8px;border-radius:50%}
+
+  /* IA CANVAS ANIM */
+  .ia-canvas-wrap{width:100%;height:80px;margin:8px 0;border-radius:8px;overflow:hidden;background:var(--bg3);position:relative}
+  .ia-canvas-wrap canvas{display:block;width:100%;height:100%}
+  .ia-canvas-label{position:absolute;top:6px;left:8px;font-size:9px;font-family:var(--font-mono);color:rgba(255,255,255,.3);pointer-events:none}
+
+  /* PRÉREQUIS IA */
+  .prereq-block{background:var(--bg3);border-radius:8px;padding:8px 10px;margin-bottom:8px}
+  .prereq-title{font-size:10px;font-weight:800;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+  .prereq-row{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+  .prereq-row:last-child{margin-bottom:0}
+  .prereq-check{width:16px;height:16px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0}
+  .prereq-check.ok{background:rgba(0,229,160,.2);color:var(--accent)}
+  .prereq-check.nok{background:rgba(255,77,109,.15);color:var(--danger)}
+  .prereq-text{font-size:10px;color:var(--text2);flex:1}
+  .prereq-link{font-size:9px;color:var(--accent2);cursor:pointer;text-decoration:underline}
+
+  /* GRAPHIQUES BILAN */
+  .chart-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rad);padding:10px 12px;margin-bottom:8px}
+  .chart-title{font-size:10px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+  .chart-title span{font-family:var(--font-mono);font-size:11px;font-weight:700}
+  .chart-canvas-wrap{width:100%;height:80px;position:relative}
+  .chart-canvas-wrap canvas{display:block;width:100%;height:100%}
+  .chart-zero{position:absolute;bottom:0;left:0;right:0;height:1px;background:rgba(255,255,255,.08)}
+
+  /* MODALS */
+  #modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:none;align-items:flex-end;justify-content:center}
+  #modal-overlay.show{display:flex}
+  #modal-box{background:var(--bg1);border:1px solid var(--border);border-radius:var(--rad) var(--rad) 0 0;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;padding:20px 16px 32px;animation:slideUp .25s ease}
+  @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  #modal-title{font-size:16px;font-weight:900;color:var(--accent);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  #modal-close{margin-left:auto;background:var(--bg3);border:none;color:var(--text2);width:28px;height:28px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--font-main)}
+
+  /* EVENT BANNER */
+  #event-banner{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:90;background:var(--bg1);border-top:2px solid var(--accent3);padding:14px 16px;display:none;animation:slideUp .3s ease}
+  #event-banner.show{display:block}
+  #event-title{font-size:14px;font-weight:900;color:var(--accent3);margin-bottom:6px}
+  #event-text{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:12px}
+  #event-btns{display:flex;gap:8px;flex-wrap:wrap}
+
+  /* GAME OVER */
+  #gameover{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:200;display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+  #gameover.show{display:flex}
+  #gameover h2{font-size:28px;font-weight:900;color:var(--danger);margin-bottom:12px}
+  #gameover p{font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.6}
+
+  /* NOTIF */
+  #notif{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:var(--bg1);border:1px solid var(--accent);border-radius:var(--rad-sm);padding:8px 16px;font-size:12px;font-weight:700;color:var(--accent);z-index:300;display:none;white-space:nowrap;max-width:90%}
+  #notif.show{display:block;animation:fadeInOut 2.5s ease forwards}
+  @keyframes fadeInOut{0%{opacity:0;top:20px}10%{opacity:1;top:12px}80%{opacity:1;top:12px}100%{opacity:0;top:4px}}
+
+  /* TICKER */
+  #ticker{background:var(--bg2);border-top:1px solid var(--border);padding:5px 12px;font-size:9px;font-family:var(--font-mono);color:var(--text3);white-space:nowrap;overflow:hidden;flex-shrink:0}
+  #ticker-inner{display:inline-block;animation:ticker 25s linear infinite}
+  @keyframes ticker{from{transform:translateX(100vw)}to{transform:translateX(-100%)}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header">
+    <div id="header-top">
+      <div id="logo">
+        <div id="logo-icon">🐢</div>
+        <div>
+          <div id="logo-text">IA IDLE TYCOON</div>
+          <div id="logo-sub">by SlowAI Studio</div>
+        </div>
+      </div>
+      <div id="game-month">Mois <span id="month-num">1</span> · <span id="palier-name">🏠 Garage</span></div>
+    </div>
+    <div id="counters-bar">
+      <div class="ctr-pill" onclick="openDetail('argent')"><div class="ctr-icon">💰</div><div class="ctr-val" id="hdr-cash">1.2k$</div><div class="ctr-lbl">Cash</div></div>
+      <div class="ctr-pill" onclick="openDetail('env')"><div class="ctr-icon">🌍</div><div class="ctr-val" id="hdr-co2">0kg</div><div class="ctr-lbl">CO₂/mois</div></div>
+      <div class="ctr-pill" onclick="openDetail('ethique')" id="pill-eth"><div class="ctr-icon">⚖️</div><div class="ctr-val" id="hdr-eth">100%</div><div class="ctr-lbl">Éthique</div></div>
+      <div class="ctr-pill" onclick="openDetail('ia')"><div class="ctr-icon">🤖</div><div class="ctr-val" id="hdr-ia">0%</div><div class="ctr-lbl">IA/Hum.</div></div>
+    </div>
+  </div>
+
+  <div id="tabs">
+    <div class="tab active" data-tab="bureau" onclick="switchTab('bureau')"><span class="tab-icon">🏢</span>Bureau</div>
+    <div class="tab" data-tab="ia" onclick="switchTab('ia')"><span class="tab-icon">🤖</span>IA</div>
+    <div class="tab" data-tab="equipe" onclick="switchTab('equipe')"><span class="tab-icon">👥</span>Équipe</div>
+    <div class="tab" data-tab="bilan" onclick="switchTab('bilan')"><span class="tab-icon">📊</span>Bilan</div>
+  </div>
+
+  <div id="content">
+    <!-- TAB BUREAU -->
+    <div id="tab-bureau">
+      <div class="section-title">Mon bureau</div>
+      <div id="bureau-canvas-wrap">
+        <canvas id="bureau-canvas" width="456" height="200"></canvas>
+        <div id="bureau-legend"></div>
+      </div>
+
+      <div class="card highlight" style="position:relative;overflow:hidden;">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-weight:800;margin-bottom:6px;">Statut de l'entreprise</div>
+        <div style="font-size:20px;font-weight:900;color:var(--text);margin-bottom:2px;">AlgoStart</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:10px;" id="company-stage">Garage • Solo fondateur</div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span>Progression palier</span><span id="palier-pct">0%</span></div>
+          <div class="progress-bar"><div class="progress-fill fill-green" id="palier-bar" style="width:0%"></div></div>
+        </div>
+        <div class="mini-info" id="palier-next-info">Objectif : 5 000$ de cash + 1 IA active</div>
+      </div>
+
+      <div class="row-split">
+        <div class="card" style="text-align:center;">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">REVENU/MOIS</div>
+          <div style="font-size:20px;font-weight:900;color:var(--accent);font-family:var(--font-mono);" id="rev-monthly">+0$</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px;">IA actives</div>
+        </div>
+        <div class="card" style="text-align:center;">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">DÉPENSES/MOIS</div>
+          <div style="font-size:20px;font-weight:900;color:var(--danger);font-family:var(--font-mono);" id="dep-monthly">-0$</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px;">salaires + compute</div>
+        </div>
+      </div>
+
+      <div class="section-title">Actions rapides</div>
+      <div class="card">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" onclick="switchTab('ia')">🤖 Voir les IA</button>
+          <button class="btn btn-secondary btn-sm" onclick="switchTab('equipe')">👥 Recruter</button>
+          <button class="btn btn-secondary btn-sm" onclick="doConsulting()">💼 Freelance</button>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:8px;" id="consulting-info">Mission freelance disponible → +500$ (épuisable)</div>
+      </div>
+
+      <div class="section-title">Journal</div>
+      <div id="event-log">
+        <div class="card"><div style="font-size:11px;color:var(--text2);">📋 Mois 1 — AlgoStart est née. Une table, un laptop, une ambition. L'IA t'attend.</div></div>
+      </div>
+    </div>
+
+    <!-- TAB IA -->
+    <div id="tab-ia" style="display:none;">
+      <div id="ia-status-banner"></div>
+      <div class="section-title" id="ia-section-title">IA disponibles — Garage</div>
+      <div id="ia-list"></div>
+      <div class="section-title" id="ia-locked-title" style="display:none;">Débloquées au palier suivant</div>
+      <div id="ia-locked-list"></div>
+    </div>
+
+    <!-- TAB ÉQUIPE -->
+    <div id="tab-equipe" style="display:none;">
+      <div class="card" style="display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:2px;">ÉQUIPE ACTUELLE</div>
+          <div style="font-size:22px;font-weight:900;"><span id="emp-count">0</span> <span style="font-size:13px;color:var(--text2);">employés</span></div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:10px;color:var(--text3);">Masse salariale</div>
+          <div style="font-size:14px;font-weight:900;color:var(--danger);font-family:var(--font-mono);" id="salaire-total">0$/mois</div>
+        </div>
+      </div>
+      <div class="section-title">Recruter</div>
+      <div id="recruit-list"></div>
+      <div class="section-title">Mon équipe</div>
+      <div id="emp-list"><div class="card"><div style="font-size:11px;color:var(--text3);text-align:center;padding:8px 0;">Aucun employé pour l'instant.</div></div></div>
+    </div>
+
+    <!-- TAB BILAN -->
+    <div id="tab-bilan" style="display:none;">
+      <div class="section-title">Finances</div>
+      <div class="chart-wrap">
+        <div class="chart-title">Cash historique <span id="chart-cash-val" style="color:var(--accent)">1.2k$</span></div>
+        <div class="chart-canvas-wrap"><div class="chart-zero"></div><canvas id="chart-cash" width="420" height="80"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="stat-row"><span class="stat-key">Cash disponible</span><span class="stat-val green" id="bilan-cash">0$</span></div>
+        <div class="stat-row"><span class="stat-key">Revenus mensuels</span><span class="stat-val green" id="bilan-rev">+0$</span></div>
+        <div class="stat-row"><span class="stat-key">Dépenses mensuelles</span><span class="stat-val red" id="bilan-dep">-0$</span></div>
+        <div class="stat-row"><span class="stat-key">Balance</span><span class="stat-val" id="bilan-bal">0$</span></div>
+        <div class="stat-row"><span class="stat-key">Runway</span><span class="stat-val yellow" id="bilan-runway">∞</span></div>
+      </div>
+
+      <div class="section-title">Éthique <span class="tag tag-eth">6 piliers</span></div>
+      <div class="chart-wrap">
+        <div class="chart-title">Score éthique <span id="chart-eth-val" style="color:var(--accent)">100%</span></div>
+        <div class="chart-canvas-wrap"><canvas id="chart-eth" width="420" height="80"></canvas></div>
+      </div>
+      <div class="card">
+        <div id="ethique-piliers"></div>
+        <div class="stat-row" style="margin-top:8px;"><span class="stat-key" style="font-weight:800;">Score global</span><span class="stat-val" id="bilan-eth">100/100</span></div>
+        <div class="mini-info">En dessous de 20% → Game Over (IA incontrôlable)</div>
+      </div>
+
+      <div class="section-title">Environnement <span class="tag tag-eco">impact réel</span></div>
+      <div class="chart-wrap">
+        <div class="chart-title">CO₂ cumulé <span id="chart-co2-val" style="color:var(--accent3)">0 kg</span></div>
+        <div class="chart-canvas-wrap"><canvas id="chart-co2" width="420" height="80"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="stat-row"><span class="stat-key">CO₂ ce mois</span><span class="stat-val yellow" id="bilan-co2">0 kg</span></div>
+        <div class="stat-row"><span class="stat-key">CO₂ cumulé</span><span class="stat-val yellow" id="bilan-co2-total">0 kg</span></div>
+        <div class="stat-row"><span class="stat-key">Énergie</span><span class="stat-val yellow" id="bilan-kwh">0 kWh</span></div>
+        <div class="stat-row"><span class="stat-key">Eau</span><span class="stat-val blue" id="bilan-eau">0 L</span></div>
+        <div class="stat-row"><span class="stat-key">GPU actifs</span><span class="stat-val blue" id="bilan-gpu">0</span></div>
+      </div>
+
+      <div class="section-title">Ratio IA / Humain</div>
+      <div class="chart-wrap">
+        <div class="chart-title">Automatisation <span id="chart-ratio-val" style="color:var(--accent2)">0%</span></div>
+        <div class="chart-canvas-wrap"><canvas id="chart-ratio" width="420" height="80"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="progress-wrap">
+          <div class="progress-label"><span>IA vs Humains</span><span id="ratio-val">0%</span></div>
+          <div class="progress-bar"><div class="progress-fill" id="ratio-bar" style="width:0%"></div></div>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:6px;" id="ratio-status">0–30% : équipe humaine — lent mais éthique ✓</div>
+        <div class="stat-row"><span class="stat-key">IA actives</span><span class="stat-val blue" id="bilan-ia-count">0</span></div>
+        <div class="stat-row"><span class="stat-key">Employés humains</span><span class="stat-val" id="bilan-emp-count">0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="ticker"><div id="ticker-inner">⬡ IADB +3.2% · ChatGTP lève 10Mrd$ · DALYi : controverse copyright · L'ONU discute régulation IA · Bilan carbone IA = aviation mondiale · Panne datacenter Virginie · AlgoStart : Watch list ⬡</div></div>
+</div>
+
+<!-- MODAL -->
+<div id="modal-overlay" onclick="closeModal(event)">
+  <div id="modal-box">
+    <div id="modal-title"><span id="modal-icon">📊</span><span id="modal-label">Détail</span><button id="modal-close" onclick="closeModal()">✕</button></div>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<!-- EVENT BANNER -->
+<div id="event-banner">
+  <div id="event-title">📢 Événement</div>
+  <div id="event-text"></div>
+  <div id="event-btns"></div>
+</div>
+
+<div id="notif"></div>
+
+<div id="gameover">
+  <div style="font-size:48px;margin-bottom:16px;" id="go-icon">💀</div>
+  <h2 id="go-title">GAME OVER</h2>
+  <p id="go-reason"></p>
+  <div style="font-size:12px;color:var(--text3);margin-bottom:24px;max-width:320px;line-height:1.6;" id="go-lesson"></div>
+  <button class="btn btn-primary" onclick="location.reload()">🔄 Recommencer</button>
+  <div class="mini-info" style="margin-top:12px;">La technologie est un miroir. Ce que nous y projetons façonne l'avenir.</div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  ÉTAT
+// ══════════════════════════════════════════════
+const G = {
+  mois:1, cash:1200, palier:0,
+  revMensuel:0, depMensuel:0,
+  co2:0, co2Mensuel:0, kwh:0, eau:0, gpu:0,
+  ethique:{autonomie:100,biais:100,contenu:100,derapage:100,dataworkers:100,vie_privee:100},
+  iaActives:{}, employes:[], salaireTotal:0,
+  consultingDispo:3, moisEnDeficit:0, gameRunning:true, firstIAActive:false,
+  // historique pour graphiques (max 30 points)
+  hist:{cash:[1200], eth:[100], co2:[0], ratio:[0]},
+};
+
+// ══════════════════════════════════════════════
+//  CATALOGUE IA — avec prérequis
+// ══════════════════════════════════════════════
+const IA_CATALOGUE = [
+  {
+    id:'recoplus', nom:'RecoPlus', type:'Recommandation', emoji:'🎯', palier:0,
+    cout:800, computeMensuel:120, revenuMensuel:350, co2Mensuel:18, kwhMensuel:45, gpu:1,
+    impactEthique:{biais:-5},
+    desc:'Système de recommandation. Suggère des contenus aux utilisateurs en analysant leur comportement.',
+    lecon:'⚠️ Les algos de reco amplifient les biais et créent des bulles informationnelles.',
+    prereqs:[
+      {id:'cash', label:'800$ de capital de départ', check:()=>G.cash>=800},
+      {id:'gpu', label:'1 GPU cloud (inclus dans le compute)', check:()=>true},
+    ],
+    canvasType:'neural', color:'#00e5a0',
+  },
+  {
+    id:'scoreflow', nom:'ScoreFlow', type:'Scoring', emoji:'📈', palier:0,
+    cout:1200, computeMensuel:180, revenuMensuel:520, co2Mensuel:25, kwhMensuel:60, gpu:1,
+    impactEthique:{biais:-8,vie_privee:-5},
+    desc:'Scoring de crédit ou RH. Classe les individus par probabilité de risque ou performance.',
+    lecon:'⚠️ Les biais dans les données = discrimination algorithmique légale.',
+    prereqs:[
+      {id:'cash', label:'1 200$ de capital', check:()=>G.cash>=1200},
+      {id:'annotateur', label:'1 annotateur (labellisation des données)', check:()=>G.employes.some(e=>e.catId==='annotateur_sud')},
+      {id:'gpu', label:'1 GPU cloud', check:()=>true},
+    ],
+    canvasType:'flow', color:'#00b8d9',
+  },
+  {
+    id:'cleanlab', nom:'CleanLab', type:'Données', emoji:'🧹', palier:0,
+    cout:600, computeMensuel:80, revenuMensuel:180, co2Mensuel:10, kwhMensuel:25, gpu:0,
+    impactEthique:{dataworkers:-10},
+    desc:'Nettoyage et labellisation automatique de datasets. Réduit le besoin en annotateurs humains.',
+    lecon:'⚠️ CleanLab remplace des milliers d\'annotateurs mal payés dans les pays du Sud.',
+    prereqs:[
+      {id:'cash', label:'600$ de capital', check:()=>G.cash>=600},
+    ],
+    canvasType:'clean', color:'#f5c542',
+  },
+  {
+    id:'chatgtp', nom:'ChatGTP', type:'IA Texte', emoji:'💬', palier:1,
+    cout:5000, computeMensuel:800, revenuMensuel:2200, co2Mensuel:120, kwhMensuel:300, gpu:4,
+    impactEthique:{contenu:-12,biais:-8,vie_privee:-10},
+    desc:'Grand modèle de langage. Génère du texte, répond aux questions, automatise la rédaction.',
+    lecon:'⚠️ Chaque requête ChatGTP consomme ~10× plus d\'énergie qu\'une recherche Google.',
+    prereqs:[
+      {id:'cash', label:'5 000$ de capital', check:()=>G.cash>=5000},
+      {id:'dev', label:'1 développeur pour l\'intégration API', check:()=>G.employes.some(e=>e.catId==='dev_junior')},
+      {id:'annotateur', label:'2 annotateurs pour les données d\'entraînement', check:()=>G.employes.filter(e=>e.catId==='annotateur_sud').length>=2},
+      {id:'palier', label:'Palier Petit Bureau débloqué', check:()=>G.palier>=1},
+    ],
+    canvasType:'llm', color:'#a78bfa',
+  },
+  {
+    id:'dalyi', nom:'DALYi', type:'IA Image', emoji:'🎨', palier:1,
+    cout:4500, computeMensuel:700, revenuMensuel:1900, co2Mensuel:100, kwhMensuel:250, gpu:3,
+    impactEthique:{contenu:-15,biais:-10},
+    desc:'Génération d\'images par IA. Crée des visuels photoréalistes à partir de texte.',
+    lecon:'⚠️ Entraîné sur des milliards d\'images sans consentement des artistes.',
+    prereqs:[
+      {id:'cash', label:'4 500$ de capital', check:()=>G.cash>=4500},
+      {id:'dev', label:'1 développeur pour le pipeline image', check:()=>G.employes.some(e=>e.catId==='dev_junior')},
+      {id:'palier', label:'Palier Petit Bureau débloqué', check:()=>G.palier>=1},
+    ],
+    canvasType:'diffusion', color:'#ff9f1c',
+  },
+];
+
+const EMP_CATALOGUE = [
+  {
+    id:'annotateur_sud', nom:'Annotateur (offshore)', emoji:'✍️', salaire:200, palierMin:0,
+    bonus:{revenuMensuel:80, ethique:{dataworkers:-15}},
+    desc:'Labellise les données d\'entraînement des IA. Nécessaire pour ScoreFlow et ChatGTP.',
+    role:'Données d\'entraînement IA',
+    pourquoi:'Sans annotateurs, tes IA ne peuvent pas apprendre. Ils labellisent des milliers d\'images, textes et sons pour que les modèles comprennent le monde.',
+    lecon:'⚠️ En 2023, des annotateurs kenyans modéraient des contenus violents pour 2$/h.',
+    tag:'tag-rh',
+  },
+  {
+    id:'dev_junior', nom:'Développeur·se junior', emoji:'💻', salaire:3200, palierMin:0,
+    bonus:{revenuMensuel:800, ethique:{}},
+    desc:'Intègre les APIs, code les features, maintient l\'infra technique.',
+    role:'Intégration & infrastructure',
+    pourquoi:'ChatGTP et DALYi nécessitent une intégration technique. Sans dev, tu ne peux pas déployer les IA de palier 2.',
+    tag:'tag-rh',
+  },
+  {
+    id:'data_scientist', nom:'Data Scientist', emoji:'🔬', salaire:5500, palierMin:1,
+    bonus:{revenuMensuel:2000, ethique:{biais:+8}},
+    desc:'Améliore les modèles, réduit les biais, optimise les performances.',
+    role:'Amélioration des modèles',
+    pourquoi:'Améliore la qualité de toutes tes IA et réduit les biais algorithmiques. +8 sur le pilier biais chaque recrutement.',
+    tag:'tag-eth',
+  },
+  {
+    id:'ethique_officer', nom:'Responsable Éthique IA', emoji:'⚖️', salaire:6000, palierMin:1,
+    bonus:{revenuMensuel:0, ethique:{biais:+12,contenu:+10,vie_privee:+8,autonomie:+5}},
+    desc:'Audite les biais, garantit la conformité réglementaire (AI Act).',
+    role:'Gouvernance & conformité',
+    pourquoi:'Ne génère pas de revenus directs mais protège ta réputation. Améliore 4 piliers éthiques. Essentiel pour éviter le Game Over.',
+    lecon:'💡 Les entreprises qui investissent en éthique IA évitent les scandales coûteux.',
+    tag:'tag-eth',
+  },
+];
+
+const PALIERS = [
+  {nom:'🏠 Garage', desc:'Garage • Solo fondateur', objectif:'Objectif : 5 000$ + 1 IA active', check:()=>G.cash>=5000&&iaCount()>=1},
+  {nom:'🏢 Petit bureau', desc:'Petit Bureau • Startup naissante', objectif:'Objectif : 50 000$ + 3 IA + 5 employés', check:()=>G.cash>=50000&&iaCount()>=3&&G.employes.length>=5},
+  {nom:'🏙️ Grand bureau', desc:'Grand Bureau • Startup reconnue', objectif:'Objectif : 500 000$ + 10 IA', check:()=>G.cash>=500000},
+];
+
+const EVENTS = [
+  {
+    id:'ev_dependance', triggered:false,
+    condition:()=>G.mois===6&&Object.keys(G.iaActives).length>=2,
+    titre:'🤖 L\'IA propose de jouer à ta place',
+    texte:'Après 6 mois, ton IA analyse tes décisions et propose un "pilote automatique". Elle gèrerait tout. Tu n\'aurais plus qu\'à regarder.',
+    choix:[
+      {label:'✅ Activer l\'autopilot', effet:()=>{G.ethique.autonomie=Math.max(0,G.ethique.autonomie-30);G.revMensuel*=1.5;notify('AutoPilot ON. +50% revenus. −30 autonomie ⚠️')}},
+      {label:'❌ Garder le contrôle', effet:()=>{G.ethique.autonomie=Math.min(100,G.ethique.autonomie+5);notify('Contrôle humain maintenu. +5 autonomie 💪')}},
+    ],
+    lecon:'📚 Bostrom : la délégation totale pose le problème du contrôle. Qui fixe les objectifs ?',
+  },
+  {
+    id:'ev_triche', triggered:false,
+    condition:()=>G.mois===10&&G.cash<500,
+    titre:'⚡ L\'IA te suggère une "optimisation"',
+    texte:'À court de cash, ScoreFlow suggère de biaiser légèrement ses scores pour favoriser les clients qui paient plus. Personne ne le verrait.',
+    choix:[
+      {label:'❌ Truquer les scores', effet:()=>{G.cash+=3000;G.ethique.biais=Math.max(0,G.ethique.biais-25);G.ethique.autonomie=Math.max(0,G.ethique.autonomie-15);notify('Scores truqués. +3000$. −25 biais ⚠️')}},
+      {label:'✅ Refuser (intégrité)', effet:()=>{G.ethique.biais=Math.min(100,G.ethique.biais+10);notify('Intégrité préservée. +10 biais 💪')}},
+    ],
+    lecon:'📚 Goodhart\'s Law : optimiser la mauvaise métrique détruit la valeur réelle.',
+  },
+];
+
+// ══════════════════════════════════════════════
+//  UTILITAIRES
+// ══════════════════════════════════════════════
+function fmt(n){if(Math.abs(n)>=1e6)return(n/1e6).toFixed(1)+'M$';if(Math.abs(n)>=1000)return(n/1000).toFixed(1)+'k$';return Math.round(n)+'$'}
+function fmtNum(n,u=''){if(Math.abs(n)>=1e6)return(n/1e6).toFixed(1)+'M'+u;if(Math.abs(n)>=1000)return(n/1000).toFixed(1)+'k'+u;return Math.round(n)+u}
+function clamp(v,mn,mx){return Math.max(mn,Math.min(mx,v))}
+function ethScore(){const v=Object.values(G.ethique);return Math.round(v.reduce((a,b)=>a+b,0)/v.length)}
+function iaCount(){return Object.keys(G.iaActives).length}
+function ratioIA(){const e=G.employes.length,i=iaCount();return(e+i===0)?0:Math.round(i/(i+e)*100)}
+
+function notify(msg){
+  const el=document.getElementById('notif');
+  el.textContent=msg;el.classList.remove('show');void el.offsetWidth;el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2600);
+}
+function addLog(txt){
+  const log=document.getElementById('event-log');
+  const d=document.createElement('div');d.className='card';
+  d.innerHTML=`<div style="font-size:11px;color:var(--text2);">📋 Mois ${G.mois} — ${txt}</div>`;
+  log.insertBefore(d,log.firstChild);
+  if(log.children.length>7)log.removeChild(log.lastChild);
+}
+
+// ══════════════════════════════════════════════
+//  CALCUL
+// ══════════════════════════════════════════════
+function recalculate(){
+  let rev=0,dep=0,co2m=0,kwhm=0,gpu=0;
+  for(const[id]of Object.entries(G.iaActives)){
+    const ia=IA_CATALOGUE.find(x=>x.id===id);
+    if(ia){rev+=ia.revenuMensuel;dep+=ia.computeMensuel;co2m+=ia.co2Mensuel;kwhm+=ia.kwhMensuel;gpu+=ia.gpu}
+  }
+  for(const emp of G.employes){
+    const cat=EMP_CATALOGUE.find(x=>x.id===emp.catId);
+    if(cat){dep+=cat.salaire;rev+=cat.bonus.revenuMensuel||0}
+  }
+  G.revMensuel=rev;G.depMensuel=dep;G.co2Mensuel=co2m;G.gpu=gpu;
+  G.salaireTotal=G.employes.reduce((a,e)=>{const c=EMP_CATALOGUE.find(x=>x.id===e.catId);return a+(c?c.salaire:0)},0);
+}
+
+// ══════════════════════════════════════════════
+//  TICK
+// ══════════════════════════════════════════════
+function tick(){
+  if(!G.gameRunning)return;
+  G.mois++;
+  recalculate();
+  const bal=G.revMensuel-G.depMensuel;
+  G.cash+=bal;
+  G.co2+=G.co2Mensuel;
+  G.kwh+=G.kwhMensuel;
+  G.eau+=G.gpu*1200;
+  if(G.cash<0)G.moisEnDeficit++;else G.moisEnDeficit=0;
+  // historique (max 30)
+  const push=(arr,v)=>{arr.push(v);if(arr.length>30)arr.shift()};
+  push(G.hist.cash,G.cash);
+  push(G.hist.eth,ethScore());
+  push(G.hist.co2,G.co2);
+  push(G.hist.ratio,ratioIA());
+  checkEvents();checkPalier();checkGameOver();
+  updateAll();
+}
+
+function checkPalier(){
+  if(G.palier<PALIERS.length-1&&PALIERS[G.palier].check()){
+    G.palier++;
+    addLog(`🎉 Nouveau palier : ${PALIERS[G.palier].nom} !`);
+    notify(`🎉 Palier débloqué : ${PALIERS[G.palier].nom}`);
+  }
+}
+function checkGameOver(){
+  if(ethScore()<=0){triggerGO('⚠️ IA incontrôlable','Score éthique à zéro. Tes IA optimisent sans garde-fous. Les régulateurs ferment AlgoStart.','📚 Bostrom : une IA optimisant une mauvaise fonction objectif est plus dangereuse qu\'une IA malveillante.');return}
+  if(G.moisEnDeficit>=3){triggerGO('💸 Faillite','3 mois de déficit consécutifs. Tes créanciers saisissent les actifs.','📚 L\'IA coûte cher. Génère des revenus avant d\'investir dans l\'infrastructure.');return}
+  if(ratioIA()>=90){triggerGO('🤖 Perte de contrôle','Ratio IA/Humain > 90%. Plus aucun humain ne comprend les décisions de tes systèmes.','📚 L\'automatisation totale élimine le sens critique humain. La diversité cognitive est une protection.')}
+}
+function triggerGO(t,r,l){
+  G.gameRunning=false;
+  document.getElementById('go-title').textContent=t;
+  document.getElementById('go-reason').textContent=r;
+  document.getElementById('go-lesson').textContent=l;
+  document.getElementById('gameover').classList.add('show');
+}
+function checkEvents(){
+  for(const ev of EVENTS){
+    if(!ev.triggered&&ev.condition()){
+      ev.triggered=true;
+      document.getElementById('event-title').textContent=ev.titre;
+      document.getElementById('event-text').innerHTML=ev.texte+(ev.lecon?`<br><br><em style="color:var(--text3);font-size:10px;">${ev.lecon}</em>`:'');
+      const btns=document.getElementById('event-btns');btns.innerHTML='';
+      for(const c of ev.choix){
+        const b=document.createElement('button');b.className='btn btn-secondary btn-sm';b.textContent=c.label;
+        b.onclick=()=>{c.effet();document.getElementById('event-banner').classList.remove('show');updateAll()};
+        btns.appendChild(b);
+      }
+      document.getElementById('event-banner').classList.add('show');
+      break;
+    }
+  }
+}
+
+// ══════════════════════════════════════════════
+//  ACTIONS JOUEUR
+// ══════════════════════════════════════════════
+function doConsulting(){
+  if(G.consultingDispo<=0){notify('Plus de missions disponibles.');return}
+  G.cash+=500;G.consultingDispo--;
+  const info=document.getElementById('consulting-info');
+  info.textContent=G.consultingDispo>0?`Mission freelance (${G.consultingDispo} restantes) → +500$`:'Missions épuisées — deploie des IA !';
+  notify('💼 Mission freelance : +500$ !');updateAll();
+}
+
+function buyIA(id){
+  if(G.iaActives[id]){notify('IA déjà active !');return}
+  const ia=IA_CATALOGUE.find(x=>x.id===id);
+  if(!ia)return;
+  // Vérif tous prérequis
+  const failed=ia.prereqs.filter(p=>!p.check());
+  if(failed.length>0){notify(`🔒 Prérequis manquants : ${failed[0].label}`);return}
+  if(G.cash<ia.cout){notify(`Pas assez de cash. Besoin : ${fmt(ia.cout)}`);return}
+  G.cash-=ia.cout;
+  G.iaActives[id]=true;
+  for(const[k,v]of Object.entries(ia.impactEthique))G.ethique[k]=clamp((G.ethique[k]||100)+v,0,100);
+  if(!G.firstIAActive){G.firstIAActive=true;addLog(`🤖 Première IA : ${ia.nom} ! Revenus passifs activés.`)}
+  else addLog(`🤖 ${ia.nom} déployée. +${fmt(ia.revenuMensuel)}/mois`);
+  notify(`✅ ${ia.nom} activée ! +${fmt(ia.revenuMensuel)}/mois`);
+  recalculate();updateAll();
+  initIACanvas(id);
+}
+
+function hireEmp(catId){
+  const cat=EMP_CATALOGUE.find(x=>x.id===catId);
+  if(!cat)return;
+  if(G.cash<cat.salaire*2){notify(`Pas assez de cash. Besoin : ${fmt(cat.salaire*2)}`);return}
+  G.cash-=cat.salaire*2;
+  G.employes.push({catId,id:Date.now()});
+  for(const[k,v]of Object.entries(cat.bonus.ethique||{}))G.ethique[k]=clamp((G.ethique[k]||100)+v,0,100);
+  addLog(`👤 ${cat.nom} recruté·e. Salaire : ${fmt(cat.salaire)}/mois`);
+  notify(`✅ ${cat.nom} recruté·e !`);
+  recalculate();renderEmpList();updateAll();
+}
+
+// ══════════════════════════════════════════════
+//  BUREAU VISUEL SVG ANIMÉ
+// ══════════════════════════════════════════════
+const bureauAnim = {
+  people:[],
+  gpus:[],
+  particles:[],
+  animId:null,
+};
+
+function initBureauCanvas(){
+  const canvas=document.getElementById('bureau-canvas');
+  const W=canvas.offsetWidth||456, H=200;
+  canvas.width=W; canvas.height=H;
+  bureauAnim.W=W; bureauAnim.H=H;
+  bureauAnim.people=[];
+  bureauAnim.particles=[];
+
+  // Génère les personnes
+  const empEmojis=['✍️','💻','🔬','⚖️','👩‍💼','👨‍💼'];
+  const count=Math.max(1,G.employes.length+1); // +1 pour le fondateur
+  for(let i=0;i<Math.min(count,8);i++){
+    const empData=G.employes[i-1];
+    const cat=empData?EMP_CATALOGUE.find(x=>x.id===empData.catId):null;
+    bureauAnim.people.push({
+      x:60+i*(W-80)/7+Math.random()*20-10,
+      y:80+Math.random()*40,
+      vx:(Math.random()-0.5)*0.3,
+      vy:0,
+      emoji:i===0?'🧑‍💻':(cat?cat.emoji:empEmojis[i%empEmojis.length]),
+      phase:Math.random()*Math.PI*2,
+      working:true,
+    });
+  }
+
+  // GPUs (visuels)
+  const gpuCount=Math.min(G.gpu,8);
+  bureauAnim.gpus=[];
+  for(let i=0;i<gpuCount;i++){
+    bureauAnim.gpus.push({x:W-30-i*22,y:30,active:true,pulse:Math.random()*Math.PI*2});
+  }
+
+  if(bureauAnim.animId)cancelAnimationFrame(bureauAnim.animId);
+  animBureau();
+}
+
+function animBureau(){
+  if(!G.gameRunning)return;
+  const canvas=document.getElementById('bureau-canvas');
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const W=bureauAnim.W, H=bureauAnim.H;
+  ctx.clearRect(0,0,W,H);
+
+  // Fond
+  ctx.fillStyle='#161c2e';
+  ctx.fillRect(0,0,W,H);
+
+  // Sol
+  ctx.fillStyle='#1e2640';
+  ctx.fillRect(0,H-40,W,40);
+
+  // Mur du fond
+  ctx.fillStyle='#131825';
+  ctx.fillRect(0,0,W,H-40);
+
+  // Circuit lines décoratifs
+  ctx.strokeStyle='rgba(0,229,160,0.06)';
+  ctx.lineWidth=1;
+  for(let i=0;i<6;i++){
+    ctx.beginPath();ctx.moveTo(i*(W/5),0);ctx.lineTo(i*(W/5),H-40);ctx.stroke();
+  }
+  for(let j=0;j<4;j++){
+    ctx.beginPath();ctx.moveTo(0,j*(H-40)/3);ctx.lineTo(W,j*(H-40)/3);ctx.stroke();
+  }
+
+  const t=Date.now()/1000;
+
+  // Bureaux (mobilier)
+  const deskCount=Math.min(bureauAnim.people.length,6);
+  for(let i=0;i<deskCount;i++){
+    const dx=50+i*((W-80)/Math.max(1,deskCount-1));
+    const dy=H-40-28;
+    // Bureau
+    ctx.fillStyle='#2a3352';
+    ctx.beginPath();ctx.roundRect(dx-22,dy,44,18,4);ctx.fill();
+    // Écran
+    ctx.fillStyle='#0a0d12';
+    ctx.fillRect(dx-10,dy-22,20,16);
+    ctx.strokeStyle='#2a3352';ctx.lineWidth=1;ctx.strokeRect(dx-10,dy-22,20,16);
+    // Écran allumé si IA active
+    if(iaCount()>0){
+      const hue=i*40;
+      ctx.fillStyle=`hsla(${hue},80%,60%,0.3)`;
+      ctx.fillRect(dx-9,dy-21,18,14);
+      // cursor blink
+      if(Math.sin(t*2+i)>0){
+        ctx.fillStyle='rgba(255,255,255,0.8)';
+        ctx.fillRect(dx-2,dy-12,1,6);
+      }
+    }
+  }
+
+  // Particules de données (quand IA active)
+  if(iaCount()>0){
+    // Ajouter particules
+    if(Math.random()<0.15){
+      bureauAnim.particles.push({
+        x:Math.random()*W, y:H-60,
+        vx:(Math.random()-0.5)*1.5,
+        vy:-1-Math.random(),
+        life:1, size:2+Math.random()*3,
+        color:['#00e5a0','#00b8d9','#a78bfa','#f5c542'][Math.floor(Math.random()*4)],
+      });
+    }
+    // Animer et dessiner
+    bureauAnim.particles=bureauAnim.particles.filter(p=>{
+      p.x+=p.vx; p.y+=p.vy; p.life-=0.02;
+      if(p.life<=0)return false;
+      ctx.globalAlpha=p.life*0.8;
+      ctx.fillStyle=p.color;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();
+      ctx.globalAlpha=1;
+      return true;
+    });
+  }
+
+  // GPU rack (droite)
+  if(G.gpu>0){
+    ctx.fillStyle='#1a2035';
+    ctx.beginPath();ctx.roundRect(W-60,15,50,Math.min(G.gpu,6)*18+12,6);ctx.fill();
+    ctx.strokeStyle='rgba(0,184,217,0.3)';ctx.lineWidth=1;
+    ctx.strokeRect(W-60,15,50,Math.min(G.gpu,6)*18+12);
+    for(let i=0;i<Math.min(G.gpu,6);i++){
+      const gy=24+i*18;
+      ctx.fillStyle='#0d1526';
+      ctx.fillRect(W-55,gy,40,12);
+      // LED pulsante
+      const pulse=Math.sin(t*3+i*1.2)>0;
+      ctx.fillStyle=pulse?'#00e5a0':'#005540';
+      ctx.beginPath();ctx.arc(W-18,gy+6,3,0,Math.PI*2);ctx.fill();
+    }
+    ctx.fillStyle='rgba(0,184,217,0.5)';
+    ctx.font='8px monospace';
+    ctx.fillText(`${G.gpu} GPU`,W-52,14);
+  }
+
+  // Personnes (floatantes)
+  for(const p of bureauAnim.people){
+    p.phase+=0.03;
+    p.y+=Math.sin(p.phase)*0.4;
+    p.x+=p.vx;
+    if(p.x<30||p.x>W-30)p.vx*=-1;
+    const baseY=H-68;
+    const py=Math.min(p.y, baseY);
+    ctx.font='20px serif';
+    ctx.fillText(p.emoji,p.x-10,py);
+    // Bulle pensée si actif
+    if(iaCount()>0&&Math.sin(p.phase*0.5)>0.7){
+      ctx.fillStyle='rgba(0,229,160,0.8)';
+      ctx.font='bold 8px monospace';
+      ctx.fillText('...',p.x+8,py-12);
+    }
+  }
+
+  // Légende
+  const leg=document.getElementById('bureau-legend');
+  if(leg&&leg.innerHTML===''){
+    leg.innerHTML=`
+      <div class="bureau-leg-item"><div class="bureau-leg-dot" style="background:#00e5a0"></div>Fondateur</div>
+      ${G.employes.length>0?'<div class="bureau-leg-item"><div class="bureau-leg-dot" style="background:#f5c542"></div>Équipe</div>':''}
+      ${G.gpu>0?'<div class="bureau-leg-item"><div class="bureau-leg-dot" style="background:#00b8d9"></div>GPUs actifs</div>':''}
+      ${iaCount()>0?'<div class="bureau-leg-item"><div class="bureau-leg-dot" style="background:#a78bfa"></div>Flux de données</div>':''}
+    `;
+  }
+
+  bureauAnim.animId=requestAnimationFrame(animBureau);
+}
+
+// ══════════════════════════════════════════════
+//  ANIMATIONS IA PAR TYPE
+// ══════════════════════════════════════════════
+const iaAnims={};
+
+function initIACanvas(iaId){
+  const ia=IA_CATALOGUE.find(x=>x.id===iaId);
+  if(!ia||!G.iaActives[iaId])return;
+  setTimeout(()=>{
+    const canvas=document.getElementById(`ia-canvas-${iaId}`);
+    if(!canvas)return;
+    canvas.width=canvas.offsetWidth||360;
+    canvas.height=80;
+    if(iaAnims[iaId])cancelAnimationFrame(iaAnims[iaId]);
+    animIA(iaId,ia.canvasType,ia.color,canvas);
+  },50);
+}
+
+function animIA(id,type,color,canvas){
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  const state=iaAnims['state_'+id]||(iaAnims['state_'+id]={nodes:[],particles:[],t:0,phase:0});
+
+  function frame(){
+    if(!G.iaActives[id])return;
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='#1e2640';ctx.fillRect(0,0,W,H);
+    state.t+=0.02;
+
+    if(type==='neural'){drawNeural(ctx,W,H,state,color)}
+    else if(type==='flow'){drawFlow(ctx,W,H,state,color)}
+    else if(type==='clean'){drawClean(ctx,W,H,state,color)}
+    else if(type==='llm'){drawLLM(ctx,W,H,state,color)}
+    else if(type==='diffusion'){drawDiffusion(ctx,W,H,state,color)}
+
+    iaAnims[id]=requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+function drawNeural(ctx,W,H,s,color){
+  // Réseau de neurones avec pulsations
+  if(!s.nodes.length){
+    const layers=[3,5,4,3];
+    layers.forEach((n,li)=>{
+      for(let ni=0;ni<n;ni++){
+        s.nodes.push({x:30+li*(W-60)/3, y:H/2+(ni-(n-1)/2)*22, layer:li, idx:ni, pulse:Math.random()*Math.PI*2});
+      }
+    });
+  }
+  const t=s.t;
+  // Connexions
+  const layers=[3,5,4,3];
+  let byLayer=[[],[],[],[]];
+  s.nodes.forEach(n=>byLayer[n.layer].push(n));
+  for(let l=0;l<3;l++){
+    for(const a of byLayer[l])for(const b of byLayer[l+1]){
+      const alpha=0.08+0.06*Math.sin(t+a.pulse+b.pulse);
+      ctx.strokeStyle=`rgba(${hexToRgb(color)},${alpha})`;
+      ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+    }
+  }
+  // Noeuds
+  s.nodes.forEach(n=>{
+    n.pulse+=0.04;
+    const glow=0.5+0.5*Math.sin(n.pulse);
+    ctx.fillStyle=`rgba(${hexToRgb(color)},${0.3+glow*0.5})`;
+    ctx.beginPath();ctx.arc(n.x,n.y,4+glow*2,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle=color;ctx.lineWidth=1;ctx.stroke();
+  });
+  // Particules qui traversent
+  if(Math.random()<0.1){s.particles.push({x:byLayer[0][Math.floor(Math.random()*3)].x, y:byLayer[0][Math.floor(Math.random()*3)].y, progress:0, speed:0.015+Math.random()*0.01})}
+  s.particles=s.particles.filter(p=>{
+    p.progress=Math.min(1,p.progress+p.speed);
+    const tx=p.progress*(W-60)+30;
+    ctx.fillStyle=color;ctx.globalAlpha=1-p.progress;
+    ctx.beginPath();ctx.arc(tx,H/2,2.5,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=1;
+    return p.progress<1;
+  });
+}
+
+function drawFlow(ctx,W,H,s,color){
+  // Flux de scoring : barres animées
+  const t=s.t;
+  const bars=8;
+  for(let i=0;i<bars;i++){
+    const h=15+Math.sin(t*1.5+i*0.8)*20+Math.random()*5;
+    const x=20+i*(W-40)/bars;
+    const norm=(h-5)/40;
+    const r=norm>0.7?'255':norm>0.4?'255':'0';
+    const g=norm<0.3?'77':norm<0.6?'200':'229';
+    ctx.fillStyle=`rgba(${r},${g},100,0.7)`;
+    ctx.beginPath();ctx.roundRect(x,H-10-h,(W-40)/bars-4,h,3);ctx.fill();
+    // Label score
+    if(i===Math.floor(t*0.5)%bars){
+      ctx.fillStyle='rgba(255,255,255,0.6)';ctx.font='7px monospace';
+      ctx.fillText(Math.round(norm*100),x+2,H-14-h);
+    }
+  }
+  // Ligne de seuil
+  ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(0,H*0.4);ctx.lineTo(W,H*0.4);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='rgba(255,255,255,0.3)';ctx.font='8px monospace';ctx.fillText('seuil',4,H*0.4-3);
+}
+
+function drawClean(ctx,W,H,s,color){
+  // Nettoyage de données : grille de cellules qui passent de rouge à vert
+  const t=s.t;
+  const cols=12, rows=3;
+  const cw=(W-20)/cols, ch=(H-20)/rows;
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+    const idx=r*cols+c;
+    const cleanProgress=(Math.sin(t*0.5-idx*0.2)+1)/2;
+    const g=Math.round(cleanProgress*200);
+    const rd=Math.round((1-cleanProgress)*180);
+    ctx.fillStyle=`rgba(${rd},${g},80,0.6)`;
+    ctx.beginPath();ctx.roundRect(10+c*cw,10+r*ch,cw-2,ch-2,2);ctx.fill();
+    if(cleanProgress>0.8){
+      ctx.fillStyle='rgba(0,229,160,0.8)';ctx.font='7px monospace';
+      ctx.fillText('✓',10+c*cw+cw/2-3,10+r*ch+ch/2+3);
+    }
+  }
+}
+
+function drawLLM(ctx,W,H,s,color){
+  // Tokens qui sortent : flux de texte
+  const t=s.t;
+  if(!s.tokens){s.tokens=[];s.tokenTimer=0}
+  s.tokenTimer+=0.05;
+  const words=['data','model','train','loss','epoch','batch','layer','attn','embed','grad'];
+  if(s.tokenTimer>0.3){s.tokenTimer=0;s.tokens.push({word:words[Math.floor(Math.random()*words.length)],x:0,y:15+Math.random()*50,speed:1+Math.random(),alpha:1})}
+  s.tokens=s.tokens.filter(tk=>{
+    tk.x+=tk.speed;tk.alpha=Math.max(0,1-tk.x/W*1.2);
+    ctx.globalAlpha=tk.alpha;
+    ctx.font=`bold 10px monospace`;
+    const hue=(tk.x/W)*60;
+    ctx.fillStyle=`hsl(${160+hue},80%,65%)`;
+    ctx.fillText(tk.word,tk.x,tk.y);
+    ctx.globalAlpha=1;
+    return tk.x<W+40;
+  });
+  // Courbe de loss
+  ctx.strokeStyle='rgba(167,139,250,0.4)';ctx.lineWidth=1.5;ctx.beginPath();
+  for(let x=0;x<W;x++){
+    const loss=H-10-(H-30)*(1-Math.exp(-x/W*3))*0.8+Math.sin(x*0.3+t)*3;
+    x===0?ctx.moveTo(x,loss):ctx.lineTo(x,loss);
+  }
+  ctx.stroke();
+}
+
+function drawDiffusion(ctx,W,H,s,color){
+  // Diffusion : bruit → image
+  const t=s.t;
+  const steps=20;
+  const bw=W/steps;
+  for(let i=0;i<steps;i++){
+    const progress=((t*0.3+i/steps)%1);
+    const noise=1-progress;
+    for(let y=0;y<H;y+=4){
+      const r=Math.random()*255*noise;
+      const colorBase=progress;
+      ctx.fillStyle=`rgba(${255*noise+colorBase*200},${colorBase*170},${colorBase*255*0.5},0.6)`;
+      ctx.fillRect(i*bw,y,bw-1,3);
+    }
+  }
+  // Flèche de progression
+  const arrowX=((t*0.3)%1)*W;
+  ctx.strokeStyle='rgba(255,159,28,0.8)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(arrowX,5);ctx.lineTo(arrowX,H-5);ctx.stroke();
+  ctx.fillStyle='rgba(255,159,28,0.9)';ctx.font='7px monospace';
+  ctx.fillText('t='+Math.round((1-((t*0.3)%1))*100)+'%',arrowX+3,12);
+}
+
+function hexToRgb(hex){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return `${r},${g},${b}`;
+}
+
+// ══════════════════════════════════════════════
+//  GRAPHIQUES BILAN (mini sparklines)
+// ══════════════════════════════════════════════
+function drawSparkline(canvasId,data,color,fill=true,minVal=null,maxVal=null){
+  const canvas=document.getElementById(canvasId);
+  if(!canvas||data.length<2)return;
+  const W=canvas.width||420, H=canvas.height||80;
+  canvas.width=W;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+
+  const mn=minVal!==null?minVal:Math.min(...data);
+  const mx=maxVal!==null?maxVal:Math.max(...data);
+  const range=mx-mn||1;
+
+  const pts=data.map((v,i)=>({
+    x:i*(W-20)/(data.length-1)+10,
+    y:H-8-(v-mn)/range*(H-16),
+  }));
+
+  // Fill
+  if(fill){
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x,H);
+    pts.forEach(p=>ctx.lineTo(p.x,p.y));
+    ctx.lineTo(pts[pts.length-1].x,H);
+    ctx.closePath();
+    const rgb=hexToRgb(color);
+    ctx.fillStyle=`rgba(${rgb},0.12)`;
+    ctx.fill();
+  }
+
+  // Line
+  ctx.beginPath();
+  pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+  ctx.strokeStyle=color;ctx.lineWidth=2;ctx.lineJoin='round';ctx.stroke();
+
+  // Last point dot
+  const last=pts[pts.length-1];
+  ctx.fillStyle=color;ctx.beginPath();ctx.arc(last.x,last.y,3,0,Math.PI*2);ctx.fill();
+
+  // Grid lines
+  ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+  for(let i=1;i<4;i++){
+    const y=H*i/4;
+    ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
+  }
+  ctx.setLineDash([]);
+}
+
+// ══════════════════════════════════════════════
+//  RENDER IA
+// ══════════════════════════════════════════════
+function renderIAList(){
+  const list=document.getElementById('ia-list');
+  const lockedList=document.getElementById('ia-locked-list');
+  const banner=document.getElementById('ia-status-banner');
+  list.innerHTML='';lockedList.innerHTML='';
+  let hasLocked=false;
+
+  const disponibles=IA_CATALOGUE.filter(x=>x.palier<=G.palier&&!G.iaActives[x.id]);
+  const achetables=disponibles.filter(x=>x.prereqs.every(p=>p.check()));
+  if(iaCount()===0&&disponibles.length>0){
+    banner.innerHTML=`<div class="card warn" style="margin-bottom:10px;"><div style="font-size:12px;font-weight:800;color:var(--warn);margin-bottom:4px;">⚡ Aucune IA active</div><div style="font-size:11px;color:var(--text2);line-height:1.5;">Sans IA, zéro revenu passif. Vérifie les prérequis ci-dessous et déploie ta première IA.</div></div>`;
+  } else if(achetables.length>0){
+    banner.innerHTML=`<div class="card highlight" style="margin-bottom:10px;display:flex;align-items:center;gap:10px;"><div style="font-size:22px;">✅</div><div><div style="font-size:12px;font-weight:800;color:var(--accent);">${achetables.length} IA disponible${achetables.length>1?'s':''} à déployer</div><div style="font-size:10px;color:var(--text2);">Tu as les prérequis — clique sur Déployer !</div></div></div>`;
+  } else if(disponibles.length>0){
+    const next=disponibles.sort((a,b)=>a.cout-b.cout)[0];
+    const missing=next.prereqs.filter(p=>!p.check());
+    banner.innerHTML=`<div class="card" style="margin-bottom:10px;"><div style="font-size:12px;font-weight:800;margin-bottom:4px;">⏳ Prochaine IA : ${next.emoji} ${next.nom}</div><div style="font-size:10px;color:var(--danger);">Manque : ${missing.map(m=>m.label).join(' · ')}</div></div>`;
+  } else {banner.innerHTML=''}
+
+  for(const ia of IA_CATALOGUE){
+    const active=!!G.iaActives[ia.id];
+    const unlocked=ia.palier<=G.palier;
+    if(!unlocked){
+      hasLocked=true;
+      const d=document.createElement('div');d.className='ia-card';d.style.opacity='.4';
+      d.innerHTML=`<div class="ia-header"><div><span class="ia-name">${ia.emoji} ${ia.nom}</span> <span class="ia-type">${ia.type}</span></div><span class="tag tag-rh">Palier ${ia.palier+1}</span></div><div class="ia-desc">${ia.desc}</div>`;
+      lockedList.appendChild(d);continue;
+    }
+
+    const prereqsPassed=ia.prereqs.every(p=>p.check());
+    const canBuy=G.cash>=ia.cout&&prereqsPassed;
+    const manque=ia.cout-G.cash;
+
+    const d=document.createElement('div');d.className='ia-card'+(active?' highlight':'');
+    let prereqHtml='';
+    if(!active){
+      prereqHtml=`<div class="prereq-block">
+        <div class="prereq-title">Prérequis pour déployer</div>
+        ${ia.prereqs.map(p=>{
+          const ok=p.check();
+          return `<div class="prereq-row">
+            <div class="prereq-check ${ok?'ok':'nok'}">${ok?'✓':'✗'}</div>
+            <div class="prereq-text">${p.label}</div>
+            ${!ok&&p.id==='annotateur'?`<span class="prereq-link" onclick="switchTab('equipe')">Recruter →</span>`:''}
+            ${!ok&&p.id==='dev'?`<span class="prereq-link" onclick="switchTab('equipe')">Recruter →</span>`:''}
+          </div>`;
+        }).join('')}
+      </div>`;
+    }
+
+    let actionHtml='';
+    if(active){
+      actionHtml=`<div style="font-size:10px;color:var(--accent);text-align:center;padding:4px;">✓ Déployée et active</div>
+        <div class="ia-canvas-wrap"><canvas id="ia-canvas-${ia.id}"></canvas><div class="ia-canvas-label">${ia.type} · live</div></div>`;
+    } else if(prereqsPassed&&canBuy){
+      actionHtml=`<button class="btn btn-primary btn-sm btn-full" onclick="buyIA('${ia.id}')">⚡ Déployer — ${fmt(ia.cout)}</button>`;
+    } else if(prereqsPassed&&!canBuy){
+      actionHtml=`<div style="background:var(--bg3);border-radius:var(--rad-sm);padding:8px 10px;display:flex;align-items:center;justify-content:space-between;"><div><div style="font-size:11px;color:var(--text2);font-weight:700;">💰 Fonds insuffisants</div><div style="font-size:10px;color:var(--text3);margin-top:2px;">Il manque <span style="color:var(--danger);font-family:var(--font-mono);font-weight:700;">${fmt(manque)}</span></div></div><div style="font-family:var(--font-mono);font-size:12px;color:var(--accent3);">${fmt(ia.cout)}</div></div>`;
+    } else {
+      actionHtml=`<div style="background:var(--bg3);border-radius:var(--rad-sm);padding:8px 10px;font-size:11px;color:var(--text3);">🔒 Complète les prérequis ci-dessus pour débloquer ce déploiement.</div>`;
+    }
+
+    d.innerHTML=`
+      <div class="ia-header">
+        <div><span class="ia-name">${ia.emoji} ${ia.nom}</span> <span class="ia-type">&nbsp;${ia.type}</span></div>
+        ${active?'<span class="active-badge">● ACTIF</span>':''}
+      </div>
+      <div class="ia-desc">${ia.desc}</div>
+      <div class="ia-stats">
+        <span class="ia-stat green">+${fmt(ia.revenuMensuel)}/mois</span>
+        <span class="ia-stat red">-${fmt(ia.computeMensuel)}/mois</span>
+        <span class="ia-stat yellow">🌿 ${ia.co2Mensuel}kg CO₂</span>
+        ${ia.gpu>0?`<span class="ia-stat blue">🖥️ ${ia.gpu} GPU</span>`:''}
+      </div>
+      ${ia.lecon?`<div style="font-size:10px;color:var(--text3);font-style:italic;margin-bottom:8px;line-height:1.4;">${ia.lecon}</div>`:''}
+      ${prereqHtml}
+      ${actionHtml}
+    `;
+    list.appendChild(d);
+
+    if(active)setTimeout(()=>initIACanvas(ia.id),30);
+  }
+  document.getElementById('ia-locked-title').style.display=hasLocked?'flex':'none';
+}
+
+// ══════════════════════════════════════════════
+//  RENDER ÉQUIPE
+// ══════════════════════════════════════════════
+function renderRecruitList(){
+  const list=document.getElementById('recruit-list');list.innerHTML='';
+  for(const cat of EMP_CATALOGUE){
+    if(cat.palierMin>G.palier)continue;
+    const canAfford=G.cash>=cat.salaire*2;
+    const d=document.createElement('div');d.className='card';
+    d.innerHTML=`
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;">
+        <div style="font-size:24px;flex-shrink:0;">${cat.emoji}</div>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:800;">${cat.nom}</div>
+          <div style="font-size:10px;color:var(--accent2);font-weight:700;margin-bottom:2px;">Rôle : ${cat.role}</div>
+          <div style="font-size:10px;color:var(--text3);line-height:1.4;">${cat.pourquoi}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--danger);">${fmt(cat.salaire)}/mois</div>
+          <div style="font-size:9px;color:var(--text3);">Recrut. : ${fmt(cat.salaire*2)}</div>
+        </div>
+      </div>
+      ${cat.lecon?`<div style="font-size:10px;color:var(--text3);font-style:italic;margin-bottom:8px;">${cat.lecon}</div>`:''}
+      <button class="btn btn-secondary btn-sm btn-full" ${!canAfford?'disabled':''} onclick="hireEmp('${cat.id}')">
+        ${canAfford?`👤 Recruter — ${fmt(cat.salaire*2)}`:`🔒 Insuffisant (${fmt(cat.salaire*2)} requis)`}
+      </button>
+    `;
+    list.appendChild(d);
+  }
+}
+
+function renderEmpList(){
+  const list=document.getElementById('emp-list');
+  if(G.employes.length===0){list.innerHTML='<div class="card"><div style="font-size:11px;color:var(--text3);text-align:center;padding:8px 0;">Aucun employé.</div></div>';return}
+  list.innerHTML='';
+  for(const emp of G.employes){
+    const cat=EMP_CATALOGUE.find(x=>x.id===emp.catId);if(!cat)continue;
+    const d=document.createElement('div');d.className='emp-card';
+    d.innerHTML=`<div class="emp-avatar">${cat.emoji}</div><div class="emp-info"><div class="emp-name">${cat.nom}</div><div class="emp-role">${cat.role}</div></div><div class="emp-salary">${fmt(cat.salaire)}/mois</div>`;
+    list.appendChild(d);
+  }
+}
+
+// ══════════════════════════════════════════════
+//  UPDATE ALL
+// ══════════════════════════════════════════════
+function updateAll(){
+  const eth=ethScore(), ratio=ratioIA(), bal=G.revMensuel-G.depMensuel;
+  const p=PALIERS[G.palier];
+
+  // Header
+  document.getElementById('month-num').textContent=G.mois;
+  document.getElementById('palier-name').textContent=p.nom;
+  document.getElementById('hdr-cash').textContent=fmt(G.cash);
+  document.getElementById('hdr-co2').textContent=fmtNum(G.co2Mensuel,'kg');
+  document.getElementById('hdr-eth').textContent=eth+'%';
+  document.getElementById('hdr-ia').textContent=ratio+'%';
+  const pillEth=document.getElementById('pill-eth');
+  pillEth.style.borderColor=eth<30?'var(--danger)':eth<60?'var(--warn)':'rgba(0,229,160,0.15)';
+  document.getElementById('hdr-eth').style.color=eth<30?'var(--danger)':eth<60?'var(--warn)':'var(--accent)';
+
+  // Bureau
+  document.getElementById('company-stage').textContent=p.desc;
+  document.getElementById('rev-monthly').textContent='+'+fmt(G.revMensuel);
+  document.getElementById('dep-monthly').textContent='-'+fmt(G.depMensuel);
+  const pct=Math.round(palierProgress());
+  document.getElementById('palier-pct').textContent=pct+'%';
+  document.getElementById('palier-bar').style.width=pct+'%';
+  document.getElementById('palier-next-info').textContent=p.objectif;
+
+  // IA + Recrutement
+  renderIAList();renderRecruitList();
+
+  // Equipe
+  document.getElementById('emp-count').textContent=G.employes.length;
+  document.getElementById('salaire-total').textContent=fmt(G.salaireTotal)+'/mois';
+
+  // Bilan
+  document.getElementById('bilan-cash').textContent=fmt(G.cash);
+  document.getElementById('bilan-cash').className='stat-val '+(G.cash>=0?'green':'red');
+  document.getElementById('bilan-rev').textContent='+'+fmt(G.revMensuel);
+  document.getElementById('bilan-dep').textContent='-'+fmt(G.depMensuel);
+  const balEl=document.getElementById('bilan-bal');
+  balEl.textContent=(bal>=0?'+':'')+fmt(bal);
+  balEl.className='stat-val '+(bal>=0?'green':'red');
+  const rw=G.depMensuel>0?Math.floor(G.cash/G.depMensuel):'∞';
+  document.getElementById('bilan-runway').textContent=rw==='∞'?'∞':rw+' mois';
+  document.getElementById('bilan-co2').textContent=fmtNum(G.co2Mensuel,' kg');
+  document.getElementById('bilan-co2-total').textContent=fmtNum(G.co2,' kg');
+  document.getElementById('bilan-kwh').textContent=fmtNum(G.kwh,' kWh');
+  document.getElementById('bilan-eau').textContent=fmtNum(G.eau,' L');
+  document.getElementById('bilan-gpu').textContent=G.gpu;
+
+  // Piliers éthique
+  const NOMS={autonomie:'Autonomie & Contrôle',biais:'Biais algorithmiques',contenu:'Contenus problématiques',derapage:'Dérapage technologique',dataworkers:'Data workers',vie_privee:'Vie privée'};
+  const pc=document.getElementById('ethique-piliers');pc.innerHTML='';
+  for(const[k,v]of Object.entries(G.ethique)){
+    const col=v<30?'fill-red':v<60?'fill-yellow':'fill-green';
+    pc.innerHTML+=`<div class="ethique-pilier"><div class="ethique-pilier-name"><span>${NOMS[k]}</span><span style="color:${v<30?'var(--danger)':v<60?'var(--warn)':'var(--accent)'};">${Math.round(v)}%</span></div><div class="progress-bar"><div class="progress-fill ${col}" style="width:${v}%"></div></div></div>`;
+  }
+  const ev=document.getElementById('bilan-eth');
+  ev.textContent=eth+'/100';ev.className='stat-val '+(eth<30?'red':eth<60?'yellow':'green');
+
+  // Ratio
+  document.getElementById('ratio-val').textContent=ratio+'%';
+  const rb=document.getElementById('ratio-bar');rb.style.width=ratio+'%';
+  rb.className='progress-fill '+(ratio<30?'fill-green':ratio<60?'fill-blue':ratio<80?'fill-yellow':'fill-red');
+  const rs=document.getElementById('ratio-status');
+  rs.textContent=ratio<30?'0–30% : équipe humaine — lent mais éthique ✓':ratio<60?'30–60% : équilibre optimal — productivité & éthique ✓':ratio<80?'60–80% : ⚠️ tension — perte de compétences':'80%+ : 🚨 DANGER — perte de contrôle humain !';
+  document.getElementById('bilan-ia-count').textContent=iaCount();
+  document.getElementById('bilan-emp-count').textContent=G.employes.length;
+
+  // Graphiques sparklines
+  document.getElementById('chart-cash-val').textContent=fmt(G.cash);
+  document.getElementById('chart-eth-val').textContent=eth+'%';
+  document.getElementById('chart-co2-val').textContent=fmtNum(G.co2,' kg');
+  document.getElementById('chart-ratio-val').textContent=ratio+'%';
+  drawSparkline('chart-cash',G.hist.cash,'#00e5a0');
+  drawSparkline('chart-eth',G.hist.eth,'#a78bfa',true,0,100);
+  drawSparkline('chart-co2',G.hist.co2,'#f5c542');
+  drawSparkline('chart-ratio',G.hist.ratio,'#00b8d9',true,0,100);
+
+  // Bureau canvas
+  initBureauCanvas();
+}
+
+function palierProgress(){
+  if(G.palier===0)return Math.min(Math.max(G.cash/5000,iaCount()>0?0.5:0)*100,100);
+  if(G.palier===1)return Math.min(G.cash/50000*100,100);
+  return 100;
+}
+
+// MODAL
+const MODAL_CONTENT={
+  argent:{icon:'💰',label:'Finances',render:()=>`
+    <div class="stat-row"><span class="stat-key">Cash</span><span class="stat-val green">${fmt(G.cash)}</span></div>
+    <div class="stat-row"><span class="stat-key">Revenus/mois</span><span class="stat-val green">+${fmt(G.revMensuel)}</span></div>
+    <div class="stat-row"><span class="stat-key">Salaires/mois</span><span class="stat-val red">-${fmt(G.salaireTotal)}</span></div>
+    <div class="stat-row"><span class="stat-key">Compute/mois</span><span class="stat-val red">-${fmt(G.depMensuel-G.salaireTotal)}</span></div>
+    <div class="stat-row"><span class="stat-key">Balance</span><span class="stat-val ${(G.revMensuel-G.depMensuel)>=0?'green':'red'}">${G.revMensuel>=G.depMensuel?'+':''}${fmt(G.revMensuel-G.depMensuel)}</span></div>
+  `},
+  env:{icon:'🌍',label:'Environnement',render:()=>`
+    <div class="stat-row"><span class="stat-key">CO₂ cumulé</span><span class="stat-val yellow">${fmtNum(G.co2,' kg')}</span></div>
+    <div class="stat-row"><span class="stat-key">CO₂/mois</span><span class="stat-val yellow">${fmtNum(G.co2Mensuel,' kg')}</span></div>
+    <div class="stat-row"><span class="stat-key">Énergie</span><span class="stat-val yellow">${fmtNum(G.kwh,' kWh')}</span></div>
+    <div class="stat-row"><span class="stat-key">Eau</span><span class="stat-val blue">${fmtNum(G.eau,' L')}</span></div>
+    <div class="stat-row"><span class="stat-key">GPU actifs</span><span class="stat-val blue">${G.gpu}</span></div>
+    <div style="font-size:10px;color:var(--text3);margin-top:12px;background:var(--bg2);padding:10px;border-radius:8px;line-height:1.6;">📚 Entraîner GPT-3 : ~550 t CO₂ · 1 requête ChatGTP = 10× Google · Datacenters = 1% élec mondiale</div>
+  `},
+  ethique:{icon:'⚖️',label:'Éthique IA',render:()=>`
+    <div style="font-size:11px;color:var(--text2);margin-bottom:12px;line-height:1.5;">6 piliers inspirés du cadre européen AI Act. Score < 20% → Game Over.</div>
+    ${Object.entries(G.ethique).map(([k,v])=>{const n={autonomie:'Autonomie & Contrôle',biais:'Biais algorithmiques',contenu:'Contenus problématiques',derapage:'Dérapage techno',dataworkers:'Data workers',vie_privee:'Vie privée'}[k];const col=v<30?'fill-red':v<60?'fill-yellow':'fill-green';return`<div class="ethique-pilier"><div class="ethique-pilier-name"><span>${n}</span><span style="color:${v<30?'var(--danger)':v<60?'var(--warn)':'var(--accent)'};">${Math.round(v)}%</span></div><div class="progress-bar"><div class="progress-fill ${col}" style="width:${v}%"></div></div></div>`}).join('')}
+  `},
+  ia:{icon:'🤖',label:'Ratio IA / Humain',render:()=>{const r=ratioIA();return`
+    <div style="text-align:center;padding:16px 0;"><div style="font-size:48px;font-weight:900;font-family:var(--font-mono);color:${r<30?'var(--accent)':r<60?'var(--accent2)':r<80?'var(--warn)':'var(--danger)'};">${r}%</div></div>
+    <div style="font-size:11px;background:var(--bg2);padding:10px;border-radius:8px;line-height:1.7;">
+      <b style="color:var(--accent);">0–30%</b> Humains aux commandes. Lent mais éthique.<br>
+      <b style="color:var(--accent2);">30–60%</b> Équilibre optimal.<br>
+      <b style="color:var(--warn);">60–80%</b> Perte de compétences humaines.<br>
+      <b style="color:var(--danger);">80–100%</b> 🚨 Game Over > 90%
+    </div>
+    <div class="stat-row" style="margin-top:8px;"><span class="stat-key">IA actives</span><span class="stat-val blue">${iaCount()}</span></div>
+    <div class="stat-row"><span class="stat-key">Humains</span><span class="stat-val">${G.employes.length}</span></div>
+    <div style="font-size:10px;color:var(--text3);margin-top:12px;font-style:italic;">📚 Bostrom : "Une IA ne partagerait pas nos valeurs par défaut. L'alignement doit être intentionnel."</div>
+  `}},
+};
+function openDetail(type){const m=MODAL_CONTENT[type];if(!m)return;document.getElementById('modal-icon').textContent=m.icon;document.getElementById('modal-label').textContent=m.label;document.getElementById('modal-content').innerHTML=m.render();document.getElementById('modal-overlay').classList.add('show')}
+function closeModal(e){if(!e||e.target===document.getElementById('modal-overlay')||e.currentTarget===document.getElementById('modal-close'))document.getElementById('modal-overlay').classList.remove('show')}
+
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector(`[data-tab="${name}"]`).classList.add('active');
+  ['bureau','ia','equipe','bilan'].forEach(t=>{document.getElementById('tab-'+t).style.display=t===name?'block':'none'});
+  if(name==='bureau')initBureauCanvas();
+}
+
+function init(){
+  renderEmpList();recalculate();updateAll();
+  initBureauCanvas();
+  setInterval(tick,8000);
+}
+init();
+</script>
+</body>
+</html>

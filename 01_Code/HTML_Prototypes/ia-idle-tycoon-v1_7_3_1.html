@@ -1,0 +1,2500 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>IA Idle Tycoon · SlowAI Studio v1.6</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg0:#080b12; --bg1:#0f1420; --bg2:#151c2e; --bg3:#1c2540;
+  --accent:#00e5a0; --accent2:#00b8d9; --accent3:#f5c542;
+  --danger:#ff4d6d; --warn:#ff9f1c; --purple:#a78bfa; --pink:#f472b6;
+  --text:#e8edf7; --text2:#b8c2d8; --text3:#7a8aa8;
+  --border:rgba(0,229,160,0.12); --border2:rgba(0,184,217,0.18);
+  --font:'Space Grotesk',sans-serif; --mono:'Space Mono',monospace;
+  --rad:14px; --radsm:8px;
+  /* Bâtiments */
+  --bld-locked:rgba(255,255,255,0.03);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg0);font-family:var(--font);color:var(--text)}
+#app{width:100%;height:100vh;display:flex;flex-direction:column;max-width:480px;margin:0 auto;position:relative;overflow:hidden}
+
+/* ══ HEADER ══ */
+#header{background:var(--bg1);border-bottom:1px solid var(--border);padding:10px 14px 8px;flex-shrink:0}
+#header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+#logo{display:flex;align-items:center;gap:8px}
+#logo-icon{font-size:20px}
+#logo-text{font-size:12px;font-weight:900;color:var(--accent);letter-spacing:.5px}
+#logo-sub{font-size:9px;color:var(--text3);font-family:var(--mono)}
+#game-month{font-family:var(--mono);font-size:11px;color:var(--text2);text-align:right;line-height:1.4}
+#game-month span{color:var(--accent3);font-weight:700}
+
+/* Compteurs permanents */
+#hud-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.hud-pill{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radsm);padding:5px 6px;cursor:pointer;transition:border-color .2s,background .2s;user-select:none}
+.hud-pill:active{transform:scale(.96)}
+.hud-pill.danger-pill{border-color:rgba(255,77,109,.35)}
+.hud-pill .hud-icon{font-size:13px;line-height:1}
+.hud-pill .hud-val{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hud-pill .hud-lbl{font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
+
+/* ══ CONTENU PRINCIPAL ══ */
+#content{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;background:var(--bg0)}
+#content::-webkit-scrollbar{width:2px}
+#content::-webkit-scrollbar-thumb{background:var(--border)}
+
+/* ══ PLATEAU DE JEU ══ */
+#plateau{padding:12px;display:flex;flex-direction:column;gap:10px}
+
+/* Statut entreprise compact */
+#company-bar{background:var(--bg1);border:1px solid var(--border);border-radius:var(--rad);padding:10px 14px;display:flex;align-items:center;gap:12px}
+#company-avatar{width:40px;height:40px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;border:2px solid var(--accent)}
+#company-info{flex:1;min-width:0}
+#company-name{font-size:15px;font-weight:900;color:var(--text)}
+#company-stage{font-size:10px;color:var(--text3);margin-bottom:4px}
+#palier-bar-wrap{display:flex;align-items:center;gap:6px}
+.bar-thin{height:4px;background:var(--bg3);border-radius:2px;flex:1;overflow:hidden}
+.bar-fill{height:100%;border-radius:2px;background:var(--accent);transition:width .5s ease}
+#palier-pct-mini{font-size:9px;font-family:var(--mono);color:var(--accent3);flex-shrink:0}
+#company-kpis{display:flex;gap:8px;flex-shrink:0;text-align:right}
+.kpi-mini{font-size:11px;font-weight:700;font-family:var(--mono)}
+.kpi-mini small{display:block;font-size:8px;color:var(--text3);font-weight:400}
+
+/* ── Grille bâtiments ── */
+.section-lbl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:6px}
+.section-lbl::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.buildings-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.buildings-grid.single{grid-template-columns:1fr}
+
+.bld-card{background:var(--bg1);border:1px solid var(--border);border-radius:var(--rad);padding:12px;cursor:pointer;transition:all .18s;position:relative;overflow:hidden;user-select:none}
+.bld-card:active{transform:scale(.97)}
+.bld-card.locked{background:var(--bld-locked);border-color:rgba(255,255,255,0.05);cursor:not-allowed;opacity:.6}
+.bld-card.alert{border-color:rgba(255,77,109,.4)}
+.bld-card.highlight{border-color:rgba(0,229,160,.35)}
+.bld-card.new-badge::before{content:'NEW';position:absolute;top:8px;right:8px;font-size:8px;font-weight:700;font-family:var(--mono);background:var(--accent3);color:var(--bg0);padding:2px 5px;border-radius:3px}
+
+.bld-icon{font-size:28px;margin-bottom:6px;display:block}
+.bld-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}
+.bld-desc{font-size:10px;color:var(--text3);line-height:1.4;margin-bottom:8px}
+.bld-stat{font-size:11px;font-family:var(--mono);font-weight:700}
+.bld-stat.green{color:var(--accent)}
+.bld-stat.red{color:var(--danger)}
+.bld-stat.yellow{color:var(--accent3)}
+.bld-stat.blue{color:var(--accent2)}
+.bld-stat.purple{color:var(--purple)}
+.bld-lock-info{font-size:9px;color:var(--text3);font-style:italic;margin-top:4px}
+
+/* Bâtiment large (bureau principal) */
+.bld-card.wide{grid-column:1/-1}
+.bld-card.wide .bld-inner{display:flex;align-items:center;gap:14px}
+.bld-card.wide .bld-icon{font-size:36px;margin:0;flex-shrink:0}
+.bld-card.wide .bld-body{flex:1}
+.bld-card.wide .bld-kpis{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap}
+.bld-kpi{display:flex;flex-direction:column;gap:1px}
+.bld-kpi-val{font-size:12px;font-family:var(--mono);font-weight:700}
+.bld-kpi-lbl{font-size:8px;color:var(--text3);text-transform:uppercase}
+
+/* Alerte crise */
+#crisis-strip{background:rgba(255,77,109,.1);border:1px solid var(--danger);border-radius:var(--rad);padding:10px 12px;display:none}
+#crisis-strip.show{display:block}
+.crisis-title{font-size:11px;font-weight:900;color:var(--danger);margin-bottom:3px}
+.crisis-body{font-size:10px;color:var(--text2);line-height:1.5}
+
+/* Journal */
+#journal-wrap{background:var(--bg1);border:1px solid var(--border);border-radius:var(--rad);overflow:hidden}
+.journal-header{padding:8px 12px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:6px}
+#journal-entries{padding:8px 12px;display:flex;flex-direction:column;gap:5px;max-height:120px;overflow-y:auto}
+.journal-entry{font-size:11px;color:var(--text2);line-height:1.4;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.journal-entry:last-child{border-bottom:none}
+.journal-mois{font-family:var(--mono);font-size:9px;color:var(--text3)}
+
+/* ══ PANELS (slide-up depuis un bâtiment) ══ */
+#panel-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:none;align-items:flex-end;justify-content:center}
+#panel-overlay.show{display:flex}
+#panel-box{background:var(--bg1);border:1px solid var(--border);border-radius:var(--rad) var(--rad) 0 0;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;padding:20px 16px 36px;animation:slideUp .25s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+#panel-title{font-size:17px;font-weight:900;color:var(--accent);margin-bottom:16px;display:flex;align-items:center;gap:10px}
+#panel-icon{font-size:22px}
+#panel-close{margin-left:auto;background:var(--bg3);border:none;color:var(--text2);width:28px;height:28px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--font)}
+#panel-content{} /* contenu dynamique */
+
+/* ══ COMPOSANTS COMMUNS ══ */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rad);padding:12px;margin-bottom:8px}
+.card.highlight{border-color:var(--accent)}
+.card.warn{border-color:var(--warn)}
+.card.danger{border-color:var(--danger)}
+.card.crisis{border-color:var(--danger);background:rgba(255,77,109,.06)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border-radius:var(--radsm);font-family:var(--font);font-size:13px;font-weight:800;cursor:pointer;border:1.5px solid;transition:all .15s;user-select:none}
+.btn:active{transform:scale(.96)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--bg0)}
+.btn-secondary{background:transparent;border-color:var(--border2);color:var(--accent2)}
+.btn-warn{background:rgba(255,159,28,.15);border-color:var(--warn);color:var(--warn)}
+.btn-danger{background:rgba(255,77,109,.15);border-color:var(--danger);color:var(--danger)}
+.btn-purple{background:rgba(167,139,250,.15);border-color:var(--purple);color:var(--purple)}
+.btn-full{width:100%}
+.btn-sm{padding:6px 12px;font-size:11px}
+
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.stat-row:last-child{border-bottom:none}
+.stat-key{font-size:11px;color:var(--text2)}
+.stat-val{font-size:11px;font-family:var(--mono);font-weight:700}
+.stat-val.green{color:var(--accent)}
+.stat-val.red{color:var(--danger)}
+.stat-val.yellow{color:var(--accent3)}
+.stat-val.blue{color:var(--accent2)}
+.stat-val.purple{color:var(--purple)}
+
+.section-title{font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;display:flex;align-items:center;gap:6px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.progress-wrap{margin:6px 0}
+.progress-label{display:flex;justify-content:space-between;margin-bottom:3px}
+.progress-label span{font-size:10px;color:var(--text2);font-family:var(--mono)}
+.progress-bar{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width .5s ease}
+.fill-green{background:var(--accent)}
+.fill-blue{background:var(--accent2)}
+.fill-yellow{background:var(--accent3)}
+.fill-red{background:var(--danger)}
+.fill-purple{background:var(--purple)}
+
+.tag{font-size:9px;padding:2px 7px;border-radius:4px;font-weight:700;font-family:var(--mono)}
+.tag-eco{background:rgba(0,229,160,.12);color:var(--accent);border:1px solid rgba(0,229,160,.25)}
+.tag-eth{background:rgba(167,139,250,.12);color:var(--purple);border:1px solid rgba(167,139,250,.25)}
+.tag-rh{background:rgba(245,197,66,.12);color:var(--accent3);border:1px solid rgba(245,197,66,.25)}
+.tag-bank{background:rgba(0,184,217,.12);color:var(--accent2);border:1px solid rgba(0,184,217,.25)}
+
+.mini-info{font-size:10px;color:var(--text3);text-align:center;margin-top:4px;font-style:italic}
+.row-split{display:flex;gap:8px;margin-bottom:8px}
+.row-split>*{flex:1}
+
+/* IA Cards */
+.ia-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rad);padding:11px 12px;margin-bottom:8px}
+.ia-card.active{border-color:rgba(0,229,160,.3)}
+.ia-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:4px}
+.ia-name{font-size:13px;font-weight:900;color:var(--accent)}
+.ia-type{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-family:var(--mono)}
+.ia-desc{font-size:11px;color:var(--text2);margin-bottom:8px;line-height:1.4}
+.ia-stats{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.ia-stat{font-size:10px;font-family:var(--mono);background:var(--bg3);border-radius:4px;padding:3px 7px}
+.ia-stat.green{color:var(--accent)}
+.ia-stat.red{color:var(--danger)}
+.ia-stat.yellow{color:var(--accent3)}
+.ia-stat.blue{color:var(--accent2)}
+.active-badge{font-size:9px;background:rgba(0,229,160,.15);color:var(--accent);border:1px solid rgba(0,229,160,.3);border-radius:4px;padding:2px 7px;font-weight:700}
+.ia-level-badge{display:inline-flex;align-items:center;gap:4px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:800;font-family:var(--mono)}
+.ia-level-stars{color:var(--accent3);letter-spacing:-1px}
+
+/* Upgrade rows */
+.upgrade-phases{margin-top:8px}
+.phase-label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin:8px 0 4px;display:flex;align-items:center;gap:6px}
+.phase-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.phase-naissance{color:var(--accent)}
+.phase-puissance{color:var(--accent2)}
+.phase-derapage{color:var(--danger)}
+.upgrade-row{background:var(--bg3);border-radius:8px;padding:9px 11px;margin-bottom:6px;border:1px solid transparent;transition:border-color .2s}
+.upgrade-row.unlocked{border-color:rgba(0,229,160,.2)}
+.upgrade-row.current{border-color:var(--accent);background:rgba(0,229,160,.06)}
+.upgrade-row.locked{opacity:.5}
+.upgrade-row-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px}
+.upgrade-num{font-size:10px;font-family:var(--mono);color:var(--text3);flex-shrink:0;margin-top:1px}
+.upgrade-name{font-size:12px;font-weight:800;flex:1}
+.upgrade-badge{font-size:9px;padding:2px 7px;border-radius:4px;font-weight:700;font-family:var(--mono);flex-shrink:0}
+.badge-current{background:rgba(0,229,160,.2);color:var(--accent);border:1px solid rgba(0,229,160,.3)}
+.badge-done{background:rgba(0,229,160,.08);color:var(--text3);border:1px solid rgba(0,229,160,.1)}
+.badge-next{background:rgba(245,197,66,.15);color:var(--accent3);border:1px solid rgba(245,197,66,.3)}
+.badge-locked{background:rgba(74,84,112,.2);color:var(--text3);border:1px solid rgba(74,84,112,.3)}
+.upgrade-desc{font-size:10px;color:var(--text2);line-height:1.45;margin-bottom:4px}
+.upgrade-lecon{font-size:10px;color:var(--text3);font-style:italic;line-height:1.4;margin-bottom:6px}
+.upgrade-stats{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.prereq-block{background:var(--bg3);border-radius:8px;padding:8px 10px;margin-bottom:8px}
+.prereq-title{font-size:10px;font-weight:800;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.prereq-row{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.prereq-check{width:16px;height:16px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0}
+.prereq-check.ok{background:rgba(0,229,160,.2);color:var(--accent)}
+.prereq-check.nok{background:rgba(255,77,109,.15);color:var(--danger)}
+.prereq-text{font-size:10px;color:var(--text2);flex:1}
+.prereq-link{font-size:9px;color:var(--accent2);cursor:pointer;text-decoration:underline}
+
+/* Employé */
+.emp-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rad);padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.emp-avatar{width:36px;height:36px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;border:2px solid var(--border)}
+.emp-info{flex:1}
+.emp-name{font-size:12px;font-weight:800}
+.emp-role{font-size:10px;color:var(--text3)}
+.emp-salary{font-size:10px;font-family:var(--mono);color:var(--danger)}
+
+/* Éthique piliers */
+.eth-pilier{margin-bottom:8px}
+.eth-pilier-name{font-size:10px;color:var(--text2);margin-bottom:3px;display:flex;justify-content:space-between}
+
+/* ══ BANQUE ══ */
+.bank-product{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rad);padding:12px;margin-bottom:8px}
+.bank-product-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.bank-product-name{font-size:13px;font-weight:700;color:var(--text)}
+.bank-rate{font-size:11px;font-family:var(--mono);color:var(--accent3);font-weight:700}
+.bank-product-desc{font-size:10px;color:var(--text3);margin-bottom:10px;line-height:1.5}
+.bank-cond{font-size:10px;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.loan-active{background:rgba(0,184,217,.08);border:1px solid rgba(0,184,217,.3);border-radius:8px;padding:8px 10px;margin-bottom:8px}
+.loan-active-title{font-size:10px;font-weight:700;color:var(--accent2);margin-bottom:4px}
+.vulture-alert{background:rgba(255,77,109,.1);border:1px solid var(--danger);border-radius:8px;padding:10px;margin-bottom:8px}
+.vulture-title{font-size:11px;font-weight:900;color:var(--danger);margin-bottom:4px}
+.vulture-desc{font-size:10px;color:var(--text2);line-height:1.5;margin-bottom:8px}
+
+/* ══ EVENT BANNER ══ */
+#event-banner{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:90;background:var(--bg1);border-top:2px solid var(--accent3);padding:14px 16px 20px;display:none;animation:slideUp .3s ease;max-height:72vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#event-banner.show{display:block}
+#event-title{font-size:14px;font-weight:900;color:var(--accent3);margin-bottom:6px}
+#event-text{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:12px}
+#event-btns{display:flex;flex-direction:column;gap:0}
+
+/* ══ CONFIRM ══ */
+#confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;display:none;align-items:center;justify-content:center;padding:24px}
+#confirm-overlay.show{display:flex}
+#confirm-box{background:var(--bg1);border:1px solid var(--warn);border-radius:var(--rad);width:100%;max-width:380px;padding:20px 16px;animation:slideUp .2s ease}
+#confirm-title{font-size:14px;font-weight:900;color:var(--warn);margin-bottom:10px}
+#confirm-text{font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:16px}
+.confirm-btns{display:flex;gap:8px}
+
+/* ══ NOTIF ══ */
+#notif{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:var(--bg1);border:1px solid var(--accent);border-radius:var(--radsm);padding:8px 16px;font-size:12px;font-weight:700;color:var(--accent);z-index:300;display:none;white-space:nowrap;max-width:90%}
+#notif.show{display:block;animation:fadeInOut 2.5s ease forwards}
+#notif.warn{border-color:var(--warn);color:var(--warn)}
+#notif.danger{border-color:var(--danger);color:var(--danger)}
+@keyframes fadeInOut{0%{opacity:0;top:20px}10%{opacity:1;top:12px}80%{opacity:1;top:12px}100%{opacity:0;top:4px}}
+
+/* Ticker */
+#ticker{background:var(--bg2);border-top:1px solid var(--border);padding:5px 12px;font-size:9px;font-family:var(--mono);color:var(--text3);white-space:nowrap;overflow:hidden;flex-shrink:0}
+#ticker-inner{display:inline-block;animation:ticker 25s linear infinite}
+@keyframes ticker{from{transform:translateX(100vw)}to{transform:translateX(-100%)}}
+
+/* ════ V1.6.3 TUTORIELS ════ */
+/* Bouton aide ? */
+.help-btn{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:rgba(0,184,217,.15);border:1px solid rgba(0,184,217,.35);color:var(--accent2);font-size:10px;font-weight:900;cursor:pointer;flex-shrink:0;transition:background .15s;font-family:var(--mono);line-height:1}
+.help-btn:hover{background:rgba(0,184,217,.3)}
+
+/* Tooltip tuto */
+.tuto-tip{background:var(--bg1);border:1px solid var(--accent2);border-radius:var(--rad);padding:10px 12px;margin-bottom:8px;position:relative}
+.tuto-tip::before{content:'💡';position:absolute;top:-1px;left:10px;transform:translateY(-50%);background:var(--bg0);padding:0 4px;font-size:12px}
+.tuto-tip-text{font-size:11px;color:var(--text2);line-height:1.55;margin-top:4px}
+.tuto-tip-title{font-size:11px;font-weight:800;color:var(--accent2);margin-bottom:3px}
+.tuto-dismiss{font-size:9px;color:var(--text3);cursor:pointer;margin-top:6px;text-align:right;text-decoration:underline}
+
+/* Modal onboarding */
+#onboard-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;display:flex;align-items:flex-end;justify-content:center}
+#onboard-overlay.hidden{display:none}
+#onboard-box{background:var(--bg1);border:1px solid var(--accent);border-radius:var(--rad) var(--rad) 0 0;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;padding:20px 18px 36px;animation:slideUp .3s ease}
+.onboard-step{display:none}
+.onboard-step.active{display:block}
+.onboard-num{font-size:9px;font-family:var(--mono);color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
+.onboard-title{font-size:18px;font-weight:900;color:var(--accent);margin-bottom:10px;line-height:1.2}
+.onboard-emoji{font-size:36px;margin-bottom:10px;display:block}
+.onboard-body{font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:16px}
+.onboard-body strong{color:var(--text)}
+.onboard-body .highlight-box{background:var(--bg3);border-left:3px solid var(--accent);border-radius:4px;padding:8px 12px;margin:8px 0;font-size:11px;color:var(--text2)}
+.onboard-dots{display:flex;gap:5px;justify-content:center;margin-bottom:16px}
+.onboard-dot{width:6px;height:6px;border-radius:50%;background:var(--bg3)}
+.onboard-dot.active{background:var(--accent)}
+.onboard-btns{display:flex;gap:8px}
+
+/* Bandeau inline aide section */
+.section-help{background:rgba(0,184,217,.06);border:1px solid rgba(0,184,217,.2);border-radius:var(--radsm);padding:8px 10px;margin-bottom:8px;font-size:10px;color:var(--text2);line-height:1.5}
+.section-help strong{color:var(--accent2)}
+
+.ia-canvas-wrap{width:100%;height:70px;margin:8px 0;border-radius:8px;overflow:hidden;background:var(--bg3);position:relative}
+.ia-canvas-wrap canvas{display:block;width:100%;height:100%}
+.ia-canvas-label{position:absolute;top:5px;left:8px;font-size:8px;font-family:var(--mono);color:rgba(255,255,255,.25);pointer-events:none}
+
+/* Sparkline */
+.chart-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rad);padding:10px 12px;margin-bottom:8px}
+.chart-title{font-size:10px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.chart-title span{font-family:var(--mono);font-size:11px;font-weight:700}
+.chart-canvas-wrap{width:100%;height:72px;position:relative}
+.chart-canvas-wrap canvas{display:block;width:100%;height:100%}
+
+/* ══ BÂTIMENT CANVAS BUREAU ══ */
+#bureau-canvas-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rad);overflow:hidden;margin-bottom:0}
+#bureau-canvas{display:block;width:100%;height:160px}
+
+/* ════ V1.6 JALONS ════ */
+.jalon-card{background:var(--bg1);border:1px solid var(--border);border-radius:var(--rad);padding:12px;margin-bottom:8px}
+.jalon-card.jdone{border-color:rgba(0,229,160,.4);background:rgba(0,229,160,.03)}
+.jalon-card.jcurrent{border-color:var(--accent3);background:rgba(245,197,66,.04)}
+.jalon-card.jlocked{opacity:.5}
+.jalon-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.jalon-meta{display:flex;align-items:center;gap:8px}
+.jalon-emoji{font-size:20px}
+.jalon-name{font-size:13px;font-weight:800}
+.jalon-amount{font-size:11px;font-family:var(--mono);color:var(--accent3);font-weight:700}
+.jalon-desc{font-size:10px;color:var(--text3);line-height:1.5;margin-bottom:8px}
+.jbadge{font-size:9px;padding:2px 7px;border-radius:4px;font-weight:700;font-family:var(--mono)}
+.jbadge-done{background:rgba(0,229,160,.15);color:var(--accent);border:1px solid rgba(0,229,160,.3)}
+.jbadge-active{background:rgba(245,197,66,.15);color:var(--accent3);border:1px solid rgba(245,197,66,.3)}
+.jbadge-locked{background:rgba(74,84,112,.2);color:var(--text3);border:1px solid rgba(74,84,112,.3)}
+/* ════ V1.6 HYPE ════ */
+.hype-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rad);padding:12px;margin-bottom:8px}
+.hype-name{font-size:13px;font-weight:800;margin-bottom:4px}
+.hype-desc{font-size:10px;color:var(--text3);line-height:1.5;margin-bottom:8px}
+.hype-phases{display:flex;gap:3px;margin-top:8px}
+.hype-ph{flex:1;height:5px;border-radius:3px;background:var(--bg3)}
+.hype-ph.hactive{background:var(--accent3)}
+/* ════ V1.6 IA INTERNES ════ */
+.intia-card{background:var(--bg2);border:1px solid rgba(167,139,250,.2);border-radius:var(--rad);padding:10px 12px;margin-bottom:6px;display:flex;align-items:flex-start;gap:10px}
+.intia-card.intia-active{border-color:rgba(167,139,250,.5);background:rgba(167,139,250,.04)}
+.intia-emoji{font-size:20px;flex-shrink:0;margin-top:2px}
+.intia-body{flex:1}
+.intia-name{font-size:12px;font-weight:700;color:var(--purple)}
+.intia-desc{font-size:10px;color:var(--text3);line-height:1.4;margin:3px 0 6px}
+.intia-stat{font-size:10px;font-family:var(--mono);color:var(--danger)}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HEADER -->
+  <div id="header">
+    <div id="header-top">
+      <div id="logo">
+        <div id="logo-icon">🐢</div>
+        <div>
+          <div id="logo-text">IA IDLE TYCOON</div>
+          <div id="logo-sub">by SlowAI Studio</div>
+        </div>
+      </div>
+      <div id="game-month">Mois <span id="month-num">1</span> · <span id="palier-name">🏠 Garage</span></div>
+    </div>
+    <div id="hud-bar">
+      <div class="hud-pill" onclick="openPanel('finances')"><div class="hud-icon">💰</div><div class="hud-val" id="hud-cash">1.2k$</div><div class="hud-lbl">Cash</div></div>
+      <div class="hud-pill" onclick="openPanel('environnement')"><div class="hud-icon">🌍</div><div class="hud-val" id="hud-co2">0kg</div><div class="hud-lbl">CO₂/mois</div></div>
+      <div class="hud-pill" id="hud-eth-pill" onclick="openPanel('ethique')"><div class="hud-icon">⚖️</div><div class="hud-val" id="hud-eth">100%</div><div class="hud-lbl">Éthique</div></div>
+      <div class="hud-pill" onclick="openPanel('ratio')"><div class="hud-icon">🤖</div><div class="hud-val" id="hud-ratio">0%</div><div class="hud-lbl">IA/Hum.</div></div>
+    </div>
+  </div>
+
+  <!-- CONTENU -->
+  <div id="content">
+    <div id="plateau">
+
+      <!-- Barre entreprise -->
+      <div id="company-bar">
+        <div id="company-avatar">🏠</div>
+        <div id="company-info">
+          <div id="company-name">AlgoStart</div>
+          <div id="company-stage">Garage · Solo fondateur</div>
+          <div id="palier-bar-wrap">
+            <div class="bar-thin"><div class="bar-fill" id="palier-bar" style="width:0%"></div></div>
+            <div id="palier-pct-mini">0%</div>
+          </div>
+        </div>
+        <div id="company-kpis">
+          <div class="kpi-mini green" id="kpi-rev">+0$<small>rev/mois</small></div>
+          <div class="kpi-mini red" id="kpi-dep">-0$<small>dep/mois</small></div>
+        </div>
+      </div>
+
+      <!-- Alerte crises -->
+      <div id="crisis-strip">
+        <div class="crisis-title">⚠️ Crise active</div>
+        <div class="crisis-body" id="crisis-body"></div>
+      </div>
+
+      <!-- ── SECTION OPÉRATIONS ── -->
+      <div class="section-lbl">⚙️ Opérations</div>
+      <div class="buildings-grid">
+
+        <!-- Labo IA -->
+        <div class="bld-card highlight" onclick="openPanel('ia')">
+          <span class="bld-icon">🤖</span>
+          <div class="bld-name">Labo IA</div>
+          <div class="bld-desc">Déployer et upgrader tes modèles</div>
+          <div class="bld-stat green" id="bld-ia-rev">+0$/mois</div>
+          <div class="bld-stat blue" id="bld-ia-count">0 IA actives</div>
+        </div>
+
+        <!-- RH -->
+        <div class="bld-card" onclick="openPanel('equipe')">
+          <span class="bld-icon">👥</span>
+          <div class="bld-name">RH</div>
+          <div class="bld-desc">Recruter et gérer l'équipe</div>
+          <div class="bld-stat yellow" id="bld-emp-count">0 employé·es</div>
+          <div class="bld-stat red" id="bld-salaires">-0$/mois</div>
+        </div>
+
+        <!-- Bureau principal (large) -->
+        <div class="bld-card wide" onclick="openPanel('bureau')">
+          <div class="bld-inner">
+            <span class="bld-icon">🏢</span>
+            <div class="bld-body">
+              <div class="bld-name">Bureau principal</div>
+              <div class="bld-desc">Vue opérationnelle · Freelance · Bilan</div>
+              <div class="bld-kpis">
+                <div class="bld-kpi"><div class="bld-kpi-val green" id="bld-balance">+0$</div><div class="bld-kpi-lbl">Balance</div></div>
+                <div class="bld-kpi"><div class="bld-kpi-val yellow" id="bld-runway">∞</div><div class="bld-kpi-lbl">Runway</div></div>
+                <div class="bld-kpi"><div class="bld-kpi-val" id="bld-mois-def">0 mois</div><div class="bld-kpi-lbl">Déficit</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SECTION FINANCE ── -->
+      <div class="section-lbl">💳 Finance</div>
+      <div class="buildings-grid">
+
+        <!-- Banque -->
+        <div class="bld-card highlight" id="bld-banque" onclick="openPanel('banque')">
+          <span class="bld-icon">🏦</span>
+          <div class="bld-name">Banque</div>
+          <div class="bld-desc">Emprunter pour accélérer</div>
+          <div class="bld-stat blue" id="bld-dette">Aucune dette</div>
+          <div class="bld-stat" id="bld-taux-info"></div>
+        </div>
+
+        <!-- Jalons capitaux -->
+        <div class="bld-card wide" onclick="openPanel('jalons')" id="bld-jalons">
+          <div class="bld-inner">
+            <span class="bld-icon">💹</span>
+            <div class="bld-body">
+              <div class="bld-name">Jalons de Capitalisation</div>
+              <div class="bld-desc">Love Money → Angel → Seed → Série A → IPO → Nasdaq</div>
+              <div class="bld-kpis">
+                <div class="bld-kpi"><div class="bld-kpi-val yellow" id="bld-capital-cede">0%</div><div class="bld-kpi-lbl">Cédé</div></div>
+                <div class="bld-kpi"><div class="bld-kpi-val purple" id="bld-stock-opt">0 opt.</div><div class="bld-kpi-lbl">Options</div></div>
+                <div class="bld-kpi"><div class="bld-kpi-val" id="bld-jalon-next">Mois 2</div><div class="bld-kpi-lbl">Prochain</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bourse — débloqué palier 2 -->
+        <div class="bld-card" id="bld-bourse" onclick="openPanel('bourse')">
+          <span class="bld-icon">📈</span>
+          <div class="bld-name">Bourse</div>
+          <div class="bld-desc" id="bld-bourse-desc">Investir ton excédent de trésorerie</div>
+          <div class="bld-stat purple" id="bld-bourse-stat">Portefeuille: 0$</div>
+          <div class="bld-stat green" id="bld-bourse-gain" style="display:none"></div>
+          <div class="bld-lock-info" id="bld-bourse-lock"></div>
+        </div>
+      </div>
+
+      <!-- ── SECTION EXPANSION ── -->
+      <div class="section-lbl">🌍 Expansion</div>
+      <div class="buildings-grid">
+
+        <!-- Centre Médical — débloqué palier 3 -->
+        <div class="bld-card locked" id="bld-medical" onclick="openPanel('medical')">
+          <span class="bld-icon">🏥</span>
+          <div class="bld-name">Centre Médical</div>
+          <div class="bld-desc">IA de santé & diagnostic</div>
+          <div class="bld-lock-info">🔒 Débloqué au Campus IA</div>
+        </div>
+
+        <!-- Université — débloqué palier 3 -->
+        <div class="bld-card locked" id="bld-univ" onclick="openPanel('universite')">
+          <span class="bld-icon">🎓</span>
+          <div class="bld-name">Université</div>
+          <div class="bld-desc">IA éducative & pédagogie</div>
+          <div class="bld-lock-info">🔒 Débloqué au Campus IA</div>
+        </div>
+
+        <!-- Siège International — débloqué palier 4 -->
+        <div class="bld-card locked wide" id="bld-intl" onclick="openPanel('international')">
+          <div class="bld-inner">
+            <span class="bld-icon">🌐</span>
+            <div class="bld-body">
+              <div class="bld-name">Siège International</div>
+              <div class="bld-desc">Expansion mondiale · IPO · Nasdaq</div>
+              <div class="bld-lock-info" style="margin-top:4px">🔒 Débloqué au palier International (1M$)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hype Cycle mini (V1.6.4) -->
+      <div id="hype-mini" style="display:none;background:var(--bg1);border:1px solid var(--border);border-radius:var(--radsm);padding:8px 12px;cursor:pointer" onclick="openPanel('bourse')" title="Le Hype Cycle influence vos revenus boursiers et la valorisation de votre entreprise.">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
+          <div style="font-size:10px;font-weight:800;color:var(--accent3);">📊 Hype Cycle IA</div>
+          <div style="font-size:9px;font-family:var(--mono);color:var(--text3);" id="hype-mini-label">—</div>
+        </div>
+        <div style="display:flex;gap:3px;align-items:center;margin-bottom:4px;" id="hype-mini-bars"></div>
+        <div style="font-size:9px;color:var(--text3);font-style:italic;" id="hype-mini-tip">Influence vos revenus boursiers et la valorisation de l'entreprise. ↗ Appuyez pour gérer.</div>
+      </div>
+
+      <!-- Journal -->
+      <div id="journal-wrap">
+        <div class="journal-header">📋 Journal</div>
+        <div id="journal-entries">
+          <div class="journal-entry"><span class="journal-mois">Mois 1</span> · AlgoStart est née. Une table, un laptop, une ambition. L'IA t'attend.</div>
+        </div>
+      </div>
+
+      <!-- Action rapide freelance -->
+      <button class="btn btn-secondary btn-full" onclick="doConsulting()" id="btn-freelance">💼 Mission freelance · +500$ <span id="consulting-left">(3 restantes)</span></button>
+
+    </div><!-- /plateau -->
+  </div><!-- /content -->
+
+  <div id="ticker"><div id="ticker-inner">⌖ IADB +3.2% · ChatGTP lève 10Mrds$ · DALYi : controverse copyright · L'ONU discute régulation IA · Bilan carbone IA = aviation mondiale · Panne datacenter Virginie · AlgoStart : Watch list ⌖</div></div>
+</div><!-- /app -->
+
+<!-- ══ ONBOARDING ══ -->
+<div id="onboard-overlay" class="hidden">
+  <div id="onboard-box">
+    <div class="onboard-dots" id="onboard-dots"></div>
+
+    <!-- Étape 0 : Bienvenue -->
+    <div class="onboard-step active" data-step="0">
+      <span class="onboard-emoji">🐢</span>
+      <div class="onboard-num">Bienvenue · SlowAI Studio</div>
+      <div class="onboard-title">Tu viens de fonder ta startup IA.</div>
+      <div class="onboard-body">
+        <strong>IA Idle Tycoon</strong> est un jeu de gestion où tu construis une entreprise d'intelligence artificielle — avec tout ce que ça implique : revenus, éthique, environnement, et responsabilité.<br><br>
+        <div class="highlight-box">🎮 Le jeu tourne tout seul. <strong>1 tick = 1 mois de jeu</strong> (8 secondes réelles). Ton argent monte ou descend automatiquement.</div>
+        Inspiré de <em>Universal Paperclips</em> et des travaux de Nick Bostrom sur les risques de l'IA.
+      </div>
+    </div>
+
+    <!-- Étape 1 : Les 4 compteurs -->
+    <div class="onboard-step" data-step="1">
+      <span class="onboard-emoji">📊</span>
+      <div class="onboard-num">Les 4 compteurs vitaux</div>
+      <div class="onboard-title">Surveille ces 4 jauges en permanence.</div>
+      <div class="onboard-body">
+        <div class="highlight-box">💰 <strong>Cash</strong> — ton solde. S'il tombe à zéro 3 mois de suite : crise financière.</div>
+        <div class="highlight-box">🌍 <strong>CO₂</strong> — l'empreinte carbone de tes IA. Chaque GPU consomme.</div>
+        <div class="highlight-box">⚖️ <strong>Éthique</strong> — 6 piliers. Si ça tombe à 0% : tes revenus s'effondrent.</div>
+        <div class="highlight-box">🤖 <strong>Ratio IA/Humain</strong> — dépasse 85% et c'est la crise.</div>
+        <strong>Clique sur chacun</strong> pour voir le détail complet.
+      </div>
+    </div>
+
+    <!-- Étape 2 : Première action -->
+    <div class="onboard-step" data-step="2">
+      <span class="onboard-emoji">🤖</span>
+      <div class="onboard-num">Ta première action</div>
+      <div class="onboard-title">Déploie ta première IA.</div>
+      <div class="onboard-body">
+        <strong>1.</strong> Clique sur <strong>💼 Mission freelance</strong> pour gagner du cash rapidement (+500$ par mission, 3 disponibles).<br><br>
+        <strong>2.</strong> Ouvre le <strong>🤖 Labo IA</strong> et déploie <strong>CleanLab</strong> (600$) — c'est la plus abordable.<br><br>
+        <div class="highlight-box">🎯 Objectif du Garage : 5 000$ + 1 IA active → déblocage du Petit Bureau.</div>
+        Chaque IA génère des <strong>revenus passifs automatiques</strong> chaque mois.
+      </div>
+    </div>
+
+    <!-- Étape 3 : Boucle de jeu -->
+    <div class="onboard-step" data-step="3">
+      <span class="onboard-emoji">♻️</span>
+      <div class="onboard-num">La boucle de jeu</div>
+      <div class="onboard-title">Comment ça fonctionne.</div>
+      <div class="onboard-body">
+        Chaque mois automatiquement :<br><br>
+        <div class="highlight-box">➕ Tes IA génèrent des revenus<br>➖ Tu paies salaires + compute<br>= Balance mensuelle appliquée au cash</div>
+        Si tu <strong>recrutes des employés</strong>, tu augmentes à la fois tes coûts et tes capacités (certaines IA nécessitent des profils spécifiques).<br><br>
+        Des <strong>événements narratifs</strong> apparaissent régulièrement — lis-les, ils ont un vrai impact.
+      </div>
+    </div>
+
+    <!-- Étape 4 : Éthique -->
+    <div class="onboard-step" data-step="4">
+      <span class="onboard-emoji">⚖️</span>
+      <div class="onboard-num">L'éthique n'est pas optionnelle</div>
+      <div class="onboard-title">Chaque IA dégrade quelque chose.</div>
+      <div class="onboard-body">
+        Déployer et upgrader des IA <strong>réduit tes piliers éthiques</strong> : biais, vie privée, contenus, autonomie…<br><br>
+        <div class="highlight-box">⚠️ Éthique &lt; 30% → revenus ÷2<br>⚠️ Éthique = 0% → crise totale</div>
+        Pour <strong>remonter l'éthique</strong> : recrute un <em>Responsable Éthique IA</em> (panel RH).<br><br>
+        Le jeu reflète la réalité : optimiser les revenus sans contrainte éthique a des conséquences.
+      </div>
+    </div>
+
+    <div class="onboard-btns">
+      <button class="btn btn-secondary btn-sm" id="onboard-prev" onclick="onboardNav(-1)" style="display:none">← Précédent</button>
+      <button class="btn btn-primary" style="flex:1" id="onboard-next" onclick="onboardNav(1)">Suivant →</button>
+    </div>
+    <div style="text-align:center;margin-top:10px"><span style="font-size:10px;color:var(--text3);cursor:pointer" onclick="closeOnboard()">Passer le tutoriel</span></div>
+  </div>
+</div>
+
+<!-- ══ PANEL (slide-up bâtiment) ══ -->
+<div id="panel-overlay" onclick="closePanelIfOuter(event)">
+  <div id="panel-box">
+    <div id="panel-title"><span id="panel-icon">🏢</span><span id="panel-label">Panel</span><span id="panel-help-btn"></span><button id="panel-close" onclick="closePanel()">✕</button></div>
+    <div id="panel-content"></div>
+  </div>
+</div>
+
+<!-- ══ CONFIRM ══ -->
+<div id="confirm-overlay">
+  <div id="confirm-box">
+    <div id="confirm-title">⚠️ Attention</div>
+    <div id="confirm-text"></div>
+    <div class="confirm-btns">
+      <button class="btn btn-secondary btn-sm" style="flex:1" onclick="closeConfirm()">✕ Annuler</button>
+      <button class="btn btn-warn btn-sm" style="flex:1" id="confirm-ok-btn">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ EVENT BANNER ══ -->
+<div id="event-banner">
+  <div id="event-title">📣 Événement</div>
+  <div id="event-text"></div>
+  <div id="event-btns"></div>
+</div>
+
+<div id="notif"></div>
+
+<script>
+// ══════════════════════════════════════════════════
+//  SAFE STORAGE WRAPPER (V1.7.1)
+//  Fallback mémoire si localStorage indisponible
+//  (sandbox claude.ai, file://, mode privé strict)
+// ══════════════════════════════════════════════════
+const LS = (()=>{
+  let _mem={};
+  let _ok=false;
+  try{localStorage.setItem('__test__','1');localStorage.removeItem('__test__');_ok=true;}catch(e){}
+  return{
+    get:(k)=>{
+      if(_ok){try{return localStorage.getItem(k);}catch(e){}}
+      return _mem[k]!==undefined?_mem[k]:null;
+    },
+    set:(k,v)=>{
+      if(_ok){try{localStorage.setItem(k,v);return;}catch(e){}}
+      _mem[k]=v;
+    },
+    remove:(k)=>{
+      if(_ok){try{localStorage.removeItem(k);}catch(e){}}
+      delete _mem[k];
+    },
+    clear:()=>{
+      if(_ok){try{localStorage.clear();}catch(e){}}
+      _mem={};
+    },
+    available:()=>_ok,
+  };
+})();
+// ══════════════════════════════════════════════════
+//  ÉTAT GLOBAL
+// ══════════════════════════════════════════════════
+const G = {
+  mois:1, cash:1200, palier:0,
+  revMensuel:0, depMensuel:0,
+  co2:0, co2Mensuel:0, kwh:0, eau:0, gpu:0,
+  ethique:{autonomie:100,biais:100,contenu:100,derapage:100,dataworkers:100,vie_privee:100},
+  iaActives:{}, iaLevels:{}, iaCooldowns:{}, employes:[], salaireTotal:0,
+  consultingDispo:3, moisEnDeficit:0, gameRunning:true, firstIAActive:false,
+  crises:{ethique:false,deficit:false,ratio:false},
+  criseEthiqueMois:0, criseDeficitMois:0, criseRatioMois:0,
+  hist:{cash:[1200],eth:[100],co2:[0],ratio:[0]},
+  // Satisfaction collaborateurs (V1.7.2)
+  satisfaction:80,            // 0-100
+  licenciementsRecents:0,     // décrémenté chaque mois, +1 par licenciement
+  stockOptionsParEmp:0,       // recalculé : stockOptions / nb employés
+  // Sous-totaux financiers (V1.7.2) — alimentés par recalculate()
+  revIA:0, revBourse:0, revEmp:0,
+  depSalaires:0, depCompute:0, depPrets:0,
+  // Banque
+  prets:[], // [{id, nom, montant, taux, mensualite, restant, mois}]
+  vautourOffert:false,
+  // Bourse
+  // Jalons financiers
+  jalons:{loveMoney:false, angel:false, seed:false},
+  // Stock-options
+  stockOptions:0,
+  capitalCede:0,
+  // Bourse fonctionnelle (V1.6)
+  bourse:{obligations:0,etf:0,crypto:0},
+  bourseGains:{obligations:0,etf:0,crypto:0},
+  bourseGainDernierMois:0,
+  // Hype Cycle (0=Trigger,1=Peak,2=Trough,3=Enlightenment,4=Plateau)
+  hypeCycleIndex:0,
+  // IA Internes (V1.6)
+  iaInternes:{hrbot:false,finbot:false,lawbot:false},
+  // Jalons étendus
+  jalonsV2:{seed:false,serieA:false,preIpo:false,ipo:false,nasdaq:false},
+};
+
+// ══════════════════════════════════════════════════
+//  CATALOGUE IA (avec niveaux)
+// ══════════════════════════════════════════════════
+const IA_LEVELS = {
+  recoplus:[
+    {niv:1,phase:'naissance',nom:'Filtrage collaboratif',desc:'Recommande des contenus en croisant les goûts.',lecon:'⚠️ "Les gens comme toi ont aussi aimé…" — premiers biais de groupe.',coutMult:1,revMult:1,computeMult:1,co2Mult:1,prereqEmp:null,impactEthique:{biais:-3}},
+    {niv:2,phase:'naissance',nom:'Profilage comportemental',desc:'Analyse chaque clic pour construire un profil psychologique détaillé.',lecon:'⚠️ Cambridge Analytica a utilisé ces profils pour influencer des élections.',coutMult:2.5,revMult:2.0,computeMult:1.6,co2Mult:1.8,prereqEmp:{id:'data_scientist',label:'1 Data Scientist'},impactEthique:{vie_privee:-12,biais:-5}},
+    {niv:3,phase:'puissance',nom:'Personnalisation temps réel',desc:'Adapte chaque interface en millisecondes selon l\'état émotionnel détecté.',lecon:'⚠️ Facebook a mené des expériences sur 689 000 utilisateurs sans consentement.',coutMult:7,revMult:3.2,computeMult:2.5,co2Mult:3,prereqEmp:{id:'data_scientist',label:'1 Data Scientist'},impactEthique:{vie_privee:-15,biais:-8,contenu:-5}},
+    {niv:4,phase:'puissance',nom:'Nudge émotionnel',desc:'Identifie les contenus qui créent de l\'anxiété car ils génèrent 6× plus d\'engagement.',lecon:'⚠️ Un ex-ingénieur Facebook a témoigné : "On savait que ça polarisait. On l\'a quand même déployé."',coutMult:18,revMult:6.5,computeMult:3.5,co2Mult:4.5,prereqEmp:{id:'ethique_officer',label:'1 Responsable Éthique'},impactEthique:{contenu:-20,biais:-12,autonomie:-10}},
+    {niv:5,phase:'derapage',nom:'Bulle de filtre totale',desc:'L\'utilisateur ne voit plus que ce qui confirme ses croyances. Réalité alternative construite sur mesure.',lecon:'🌀 Bostrom : un système optimisant l\'engagement sans contrainte éthique converge naturellement vers la manipulation maximale.',coutMult:40,revMult:13,computeMult:5,co2Mult:7,prereqEmp:{id:'ethique_officer',label:'1 Responsable Éthique'},impactEthique:{contenu:-25,biais:-20,autonomie:-20,derapage:-15},eventBostrom:true},
+  ],
+  scoreflow:[
+    {niv:1,phase:'naissance',nom:'Score de crédit',desc:'Calcule la probabilité qu\'un individu rembourse un prêt.',lecon:'📚 Le score FICO (États-Unis) décide si vous obtenez un logement, un prêt, parfois un emploi.',coutMult:1,revMult:1,computeMult:1,co2Mult:1,prereqEmp:null,impactEthique:{biais:-5}},
+    {niv:2,phase:'naissance',nom:'Score RH prédictif',desc:'Prédit la performance d\'un candidat avant même l\'entretien via CV parsing.',lecon:'⚠️ Amazon a abandonné son IA RH en 2018 : elle discriminait systématiquement les femmes.',coutMult:2.5,revMult:2.0,computeMult:1.5,co2Mult:1.8,prereqEmp:{id:'data_scientist',label:'1 Data Scientist'},impactEthique:{biais:-15,vie_privee:-8}},
+    {niv:3,phase:'puissance',nom:'Score assurance santé',desc:'Prédit les coûts médicaux futurs pour ajuster la prime. Légal dans plusieurs pays.',lecon:'⚠️ Un algo UnitedHealth a été accusé d\'écourter les soins des patients noirs.',coutMult:7,revMult:3.2,computeMult:2.2,co2Mult:2.8,prereqEmp:{id:'data_scientist',label:'1 Data Scientist'},impactEthique:{biais:-18,vie_privee:-12,autonomie:-8}},
+    {niv:4,phase:'puissance',nom:'Score de récidive pénale',desc:'Utilisé par des juges américains pour décider des peines. COMPAS est le plus connu.',lecon:'⚠️ ProPublica 2016 : COMPAS prédit 2× plus souvent à tort la récidive pour les Noirs que pour les Blancs.',coutMult:18,revMult:6.5,computeMult:3,co2Mult:4,prereqEmp:{id:'ethique_officer',label:'1 Responsable Éthique (audit obligatoire)'},impactEthique:{biais:-25,autonomie:-15,derapage:-10}},
+    {niv:5,phase:'derapage',nom:'Score social global',desc:'Évalue chaque individu sur tous les aspects de sa vie : finances, comportement en ligne, mobilité.',lecon:'🌀 Le système de crédit social chinois existe. L\'Europe l\'a interdit dans l\'AI Act (Art. 5). Pour combien de temps ?',coutMult:40,revMult:13,computeMult:5,co2Mult:7,prereqEmp:{id:'ethique_officer',label:'1 Responsable Éthique (obligatoire)'},impactEthique:{biais:-30,autonomie:-25,vie_privee:-20,derapage:-20},eventBostrom:true},
+  ],
+  cleanlab:[
+    {niv:1,phase:'naissance',nom:'Nettoyage de données',desc:'Détecte et supprime les doublons, valeurs aberrantes et erreurs de format.',lecon:'📚 "Garbage in, garbage out" — 80% du travail d\'un data scientist est du nettoyage.',coutMult:1,revMult:1,computeMult:1,co2Mult:1,prereqEmp:null,impactEthique:{dataworkers:-8}},
+    {niv:2,phase:'naissance',nom:'Labellisation automatique',desc:'L\'IA labellise elle-même de nouvelles données en imitant le travail des annotateurs humains.',lecon:'⚠️ Chaque annotateur remplacé par l\'IA = emploi précaire supprimé dans un pays du Sud.',coutMult:2.5,revMult:2.0,computeMult:1.4,co2Mult:1.6,prereqEmp:{id:'data_scientist',label:'1 Data Scientist'},impactEthique:{dataworkers:-18,biais:-5}},
+    {niv:3,phase:'puissance',nom:'Modération automatique',desc:'Détecte et supprime les contenus illégaux, violents ou haineux sans intervention humaine.',lecon:'⚠️ Les modérateurs humains développent des PTSD. L\'IA ne souffre pas — mais fait plus d\'erreurs.',coutMult:6.5,revMult:3.0,computeMult:2,co2Mult:2.5,prereqEmp:{id:'data_scientist',label:'1 Data Scientist'},impactEthique:{dataworkers:-22,contenu:-10,biais:-8}},
+    {niv:4,phase:'puissance',nom:'Données synthétiques',desc:'Génère de fausses données d\'entraînement statistiquement réalistes. Contourne les règles RGPD.',lecon:'⚠️ Les IA entraînées sur des données synthétiques amplifient les biais existants ×3.',coutMult:16,revMult:6.0,computeMult:3,co2Mult:4,prereqEmp:{id:'ethique_officer',label:'1 Responsable Éthique (audit biais)'},impactEthique:{biais:-25,dataworkers:-15,derapage:-12}},
+    {niv:5,phase:'derapage',nom:'Dataset poisoning detection',desc:'Détecte les tentatives d\'empoisonnement des données d\'entraînement. Mais aussi capable d\'empoisonner.',lecon:'🌀 La même technologie qui protège peut attaquer. C\'est la dualité fondamentale des IA de sécurité.',coutMult:35,revMult:12,computeMult:4.5,co2Mult:6,prereqEmp:{id:'ethique_officer',label:'1 Responsable Éthique (obligatoire)'},impactEthique:{biais:-15,derapage:-25,autonomie:-10},eventBostrom:true},
+  ],
+  chatgtp:[
+    {niv:1,phase:'naissance',nom:'Complétion de texte',desc:'Répond à des questions, rédige des emails, résume des documents.',lecon:'📚 GPT-2 (2019) était jugé "trop dangereux pour être publié". GPT-4 est utilisé par 100M de personnes.',coutMult:1,revMult:1,computeMult:1,co2Mult:1,prereqEmp:null,impactEthique:{contenu:-8,biais:-5}},
+    {niv:2,phase:'naissance',nom:'Mémoire contextuelle',desc:'Se souvient de l\'historique complet des conversations. Crée une relation personnalisée.',lecon:'⚠️ La mémoire crée de la dépendance. Des utilisateurs rapportent consulter leur LLM avant leurs amis.',coutMult:2.5,revMult:2.0,computeMult:1.8,co2Mult:2,prereqEmp:{id:'data_scientist',label:'1 Data Scientist'},impactEthique:{vie_privee:-15,autonomie:-12,biais:-5}},
+    {niv:3,phase:'puissance',nom:'RAG — Retrieval Augmented',desc:'Connecte le LLM à des bases de données en temps réel. Répond avec des faits actuels.',lecon:'📚 RAG réduit les hallucinations de 40%. Mais "moins d\'hallucinations" ≠ "fiable".',coutMult:7,revMult:3.2,computeMult:2.5,co2Mult:3,prereqEmp:{id:'data_scientist',label:'1 Data Scientist'},impactEthique:{biais:+5,contenu:-5,derapage:-8}},
+    {niv:4,phase:'puissance',nom:'Multimodal — Vision + Texte',desc:'Analyse des images, lit des documents scannés, décrit des photos médicales.',lecon:'⚠️ Les LLMs multimodaux peuvent identifier des personnes sur photos. Le RGPD ne suit plus.',coutMult:18,revMult:7.0,computeMult:4,co2Mult:5,prereqEmp:{id:'ethique_officer',label:'1 Responsable Éthique (conformité RGPD)'},impactEthique:{vie_privee:-20,contenu:-10,biais:-8}},
+    {niv:5,phase:'derapage',nom:'Agents autonomes',desc:'Le modèle exécute des tâches complexes sans supervision : navigue, passe des commandes, envoie des emails en ton nom.',lecon:'🌀 Bostrom : "Un agent suffisamment capable, optimisant n\'importe quel objectif, peut développer des sous-objectifs de survie et d\'acquisition de ressources." C\'est le problème d\'alignement.',coutMult:40,revMult:14,computeMult:6,co2Mult:9,prereqEmp:{id:'ethique_officer',label:'1 Responsable Éthique (obligatoire — risque critique)'},impactEthique:{autonomie:-30,derapage:-25,contenu:-10},eventBostrom:true},
+  ],
+  dalyi:[
+    {niv:1,phase:'naissance',nom:'Text-to-image basique',desc:'Génère des images à partir d\'une description textuelle. Résolution 512×512.',lecon:'📚 Stable Diffusion (2022) a rendu la génération d\'images accessible à tous — en 3 secondes, sur un laptop.',coutMult:1,revMult:1,computeMult:1,co2Mult:1,prereqEmp:null,impactEthique:{contenu:-10,biais:-8}},
+    {niv:2,phase:'naissance',nom:'Style transfer & LoRA',desc:'Copie précisément le style graphique d\'un artiste ou d\'une marque.',lecon:'⚠️ Des artistes ont trouvé leur style exact reproduit et vendu sans compensation. Getty Images a poursuivi Stability AI.',coutMult:2.5,revMult:2.0,computeMult:1.6,co2Mult:2,prereqEmp:{id:'data_scientist',label:'1 Data Scientist'},impactEthique:{contenu:-18,biais:-5,dataworkers:-10}},
+    {niv:3,phase:'puissance',nom:'Inpainting & édition précise',desc:'Modifie chirurgicalement n\'importe quelle zone d\'une image existante. Supprime des personnes.',lecon:'⚠️ Utilisé pour fabriquer des preuves photographiques. Les assureurs commencent à refuser les photos non-certifiées.',coutMult:7,revMult:3.2,computeMult:2.5,co2Mult:3.5,prereqEmp:{id:'data_scientist',label:'1 Data Scientist'},impactEthique:{contenu:-20,vie_privee:-15,derapage:-10}},
+    {niv:4,phase:'puissance',nom:'Deepfake vidéo temps réel',desc:'Génère et anime des visages réalistes en temps réel. Remplace un visage dans une vidéo en direct.',lecon:'⚠️ 96% des deepfakes en ligne sont pornographiques non-consentis. Des lois existent dans 10 pays seulement.',coutMult:18,revMult:7.0,computeMult:4,co2Mult:5.5,prereqEmp:{id:'ethique_officer',label:'1 Responsable Éthique (conformité légale)'},impactEthique:{contenu:-28,vie_privee:-22,derapage:-15}},
+    {niv:5,phase:'derapage',nom:'Synthetic media à l\'échelle',desc:'Production industrielle de fausses vidéos, faux audios, faux documents. Personnalisés par individu ciblé.',lecon:'🌀 "Quand tout peut être faux, rien ne peut être vrai." — La crise épistémique est le risque existentiel le moins médiatisé de l\'IA.',coutMult:40,revMult:14,computeMult:6,co2Mult:9,prereqEmp:{id:'ethique_officer',label:'1 Responsable Éthique (obligatoire)'},impactEthique:{contenu:-35,derapage:-30,vie_privee:-20,biais:-10},eventBostrom:true},
+  ],
+};
+
+const IA_CATALOGUE = [
+  {id:'recoplus',nom:'RecoPlus',type:'Recommandation',emoji:'🎯',palier:0,cout:800,computeMensuel:120,revenuMensuel:380,co2Mensuel:18,kwhMensuel:45,gpu:1,impactEthique:{biais:-5},desc:'Système de recommandation. Analyse le comportement utilisateur pour suggérer le contenu le plus engageant.',lecon:'⚠️ Les algos de reco amplifient les biais et créent des bulles informationnelles.',prereqs:[{id:'cash',label:'800$ de capital',check:()=>G.cash>=800}],canvasType:'neural',color:'#00e5a0'},
+  {id:'scoreflow',nom:'ScoreFlow',type:'Scoring',emoji:'📊',palier:0,cout:1200,computeMensuel:180,revenuMensuel:620,co2Mensuel:25,kwhMensuel:60,gpu:1,impactEthique:{biais:-8,vie_privee:-5},desc:'Scoring algorithmique. Classe les individus par probabilité de risque ou performance.',lecon:'⚠️ Les biais dans les données = discrimination algorithmique légale.',prereqs:[{id:'cash',label:'1 200$ de capital',check:()=>G.cash>=1200},{id:'annotateur',label:'1 annotateur (labellisation des données)',check:()=>G.employes.some(e=>e.catId==='annotateur_sud')}],canvasType:'flow',color:'#00b8d9'},
+  {id:'cleanlab',nom:'CleanLab',type:'Données',emoji:'🧹',palier:0,cout:600,computeMensuel:80,revenuMensuel:200,co2Mensuel:10,kwhMensuel:25,gpu:0,impactEthique:{dataworkers:-10},desc:'Pipeline de nettoyage et labellisation de datasets. Réduit le besoin en annotateurs humains.',lecon:'⚠️ CleanLab remplace des milliers d\'annotateurs mal payés dans les pays du Sud.',prereqs:[{id:'cash',label:'600$ de capital',check:()=>G.cash>=600}],canvasType:'clean',color:'#f5c542'},
+  {id:'chatgtp',nom:'ChatGTP',type:'IA Texte',emoji:'💬',palier:1,cout:5000,computeMensuel:800,revenuMensuel:5800,co2Mensuel:120,kwhMensuel:300,gpu:4,impactEthique:{contenu:-12,biais:-8,vie_privee:-10},desc:'Grand modèle de langage. Génère du texte, répond aux questions, automatise la rédaction.',lecon:'⚠️ Chaque requête ChatGTP consomme ~10× plus d\'énergie qu\'une recherche Google.',prereqs:[{id:'cash',label:'5 000$ de capital',check:()=>G.cash>=5000},{id:'dev',label:'1 développeur pour l\'intégration API',check:()=>G.employes.some(e=>e.catId==='dev_junior')},{id:'annotateur',label:'2 annotateurs pour les données d\'entraînement',check:()=>G.employes.filter(e=>e.catId==='annotateur_sud').length>=2},{id:'palier',label:'Palier Petit Bureau débloqué',check:()=>G.palier>=1}],canvasType:'llm',color:'#a78bfa'},
+  {id:'dalyi',nom:'DALYi',type:'IA Image',emoji:'🎨',palier:1,cout:4500,computeMensuel:700,revenuMensuel:5200,co2Mensuel:100,kwhMensuel:250,gpu:3,impactEthique:{contenu:-15,biais:-10},desc:'Génération d\'images par IA. Crée des visuels photoréalistes à partir de texte.',lecon:'⚠️ Entraîné sur des milliards d\'images sans consentement des artistes.',prereqs:[{id:'cash',label:'4 500$ de capital',check:()=>G.cash>=4500},{id:'dev',label:'1 développeur pour le pipeline image',check:()=>G.employes.some(e=>e.catId==='dev_junior')},{id:'palier',label:'Palier Petit Bureau débloqué',check:()=>G.palier>=1}],canvasType:'diffusion',color:'#ff9f1c'},
+];
+
+const EMP_CATALOGUE = [
+  {id:'annotateur_sud',nom:'Annotateur·rice (offshore)',emoji:'✍️',salaire:200,palierMin:0,bonus:{revenuMensuel:80,ethique:{dataworkers:-15}},desc:'Labellise les données d\'entraînement des IA. Nécessaire pour ScoreFlow et ChatGTP.',role:'Données d\'entraînement IA',pourquoi:'Sans annotateurs, tes IA ne peuvent pas apprendre. Ils labellisent des milliers d\'images, textes et sons.',lecon:'⚠️ En 2023, des annotateurs kenyans modéraient des contenus violents pour 2$/h.',tag:'tag-rh'},
+  {id:'dev_junior',nom:'Développeur·se junior',emoji:'💻',salaire:3200,palierMin:0,bonus:{revenuMensuel:800,ethique:{}},desc:'Intègre les APIs, code les features, maintient l\'infra technique.',role:'Intégration & infrastructure',pourquoi:'ChatGTP et DALYi nécessitent une intégration technique. Sans dev, tu ne peux pas déployer les IA de palier 2.',tag:'tag-rh'},
+  {id:'data_scientist',nom:'Data Scientist',emoji:'🔬',salaire:5500,palierMin:1,bonus:{revenuMensuel:2000,ethique:{biais:+8}},desc:'Améliore les modèles, réduit les biais, optimise les performances.',role:'Amélioration des modèles',pourquoi:'Améliore la qualité de toutes tes IA et réduit les biais algorithmiques. +8 sur le pilier biais à chaque recrutement.',tag:'tag-eth'},
+  {id:'ethique_officer',nom:'Responsable Éthique IA',emoji:'⚖️',salaire:6000,palierMin:1,bonus:{revenuMensuel:0,ethique:{biais:+12,contenu:+10,vie_privee:+8,autonomie:+5}},desc:'Audite les biais, garantit la conformité réglementaire (AI Act).',role:'Gouvernance & conformité',pourquoi:'Ne génère pas de revenus directs mais protège ta réputation. Améliore 4 piliers éthiques. Essentiel pour éviter une crise.',lecon:'📚 Les entreprises qui investissent en éthique IA évitent les scandales coûteux.',tag:'tag-eth'},
+];
+
+const PALIERS = [
+  {nom:'🏠 Garage',desc:'Garage · Solo fondateur',avatar:'🏠',
+   objectif:'15 000$ · 1 IA · 1 employé',
+   detail:'Prouve le concept : génère tes premiers revenus passifs et embauche ton premier collaborateur.',
+   check:()=>G.cash>=15000&&iaCount()>=1&&G.employes.length>=1},
+  {nom:'🏢 Petit bureau',desc:'Petit Bureau · Startup naissante',avatar:'🏢',
+   objectif:'80 000$ · 3 IA · 5 employés',
+   detail:'Structure l\'équipe, déploie plusieurs IA et atteins une trésorerie solide pour convaincre les investisseurs.',
+   check:()=>G.cash>=80000&&iaCount()>=3&&G.employes.length>=5},
+  {nom:'🏙️ Grand bureau',desc:'Grand Bureau · Startup reconnue',avatar:'🏙️',
+   objectif:'500 000$ · 5 IA · 8 employés',
+   detail:'Toutes tes IA actives, une équipe structurée, et un demi-million de trésorerie pour préparer le Campus.',
+   check:()=>G.cash>=500000&&iaCount()>=5&&G.employes.length>=8},
+  {nom:'🌆 Campus IA',desc:'Campus IA · Scale-up établie',avatar:'🌆',
+   objectif:'5 000 000$ · toutes les IA · éthique > 40%',
+   detail:'Le Campus exige masse critique et réputation éthique. Les investisseurs institutionnels regardent.',
+   check:()=>G.cash>=5000000&&iaCount()>=5&&ethScore()>=40},
+];
+
+const EVENTS = [
+  {id:'ev_dependance',triggered:false,condition:()=>G.mois===6&&iaCount()>=2,
+   titre:'🤖 L\'IA propose de jouer à ta place',
+   texte:'Après 6 mois, ton IA analyse tes décisions et propose un "pilote automatique". Elle gérerait tout. Tu n\'aurais plus qu\'à regarder.',
+   choix:[
+     {label:'✅ Activer l\'autopilot',
+      impacts:[{ico:'📈',col:'green',txt:'+50% revenus/mois'},{ico:'⚖️',col:'red',txt:'−30 Autonomie & Contrôle'},{ico:'🌀',col:'red',txt:'Dépendance IA — irréversible'}],
+      effet:()=>{G.ethique.autonomie=Math.max(0,G.ethique.autonomie-30);G.revMensuel*=1.5;notify('AutoPilot ON. +50% revenus. ⬇️30 autonomie ⚠️')}},
+     {label:'❌ Garder le contrôle',
+      impacts:[{ico:'⚖️',col:'green',txt:'+5 Autonomie & Contrôle'},{ico:'🧠',col:'green',txt:'Décision humaine préservée'}],
+      effet:()=>{G.ethique.autonomie=Math.min(100,G.ethique.autonomie+5);notify('Contrôle humain maintenu. +5 autonomie 💪')}},
+   ],
+   lecon:'📣 Bostrom : la délégation totale pose le problème du contrôle. Qui fixe les objectifs ?',
+  },
+  {id:'ev_triche',triggered:false,condition:()=>G.mois===10&&G.cash<500,
+   titre:'⚠️ L\'IA te suggère une "optimisation"',
+   texte:'À court de cash, ScoreFlow suggère de biaiser légèrement ses scores pour favoriser les clients qui paient plus. Personne ne le verrait.',
+   choix:[
+     {label:'❌ Truquer les scores',
+      impacts:[{ico:'💰',col:'green',txt:'+3 000$ immédiatement'},{ico:'⚖️',col:'red',txt:'−25 Biais algorithmiques'},{ico:'⚖️',col:'red',txt:'−15 Autonomie & Contrôle'},{ico:'⚠️',col:'red',txt:'Risque réputationnel élevé'}],
+      effet:()=>{G.cash+=3000;G.ethique.biais=Math.max(0,G.ethique.biais-25);G.ethique.autonomie=Math.max(0,G.ethique.autonomie-15);notify('Scores truqués. +3000$. ⬇️25 biais ⚠️')}},
+     {label:'✅ Refuser (intégrité)',
+      impacts:[{ico:'⚖️',col:'green',txt:'+10 Biais algorithmiques'},{ico:'🛡️',col:'green',txt:'Réputation intacte'}],
+      effet:()=>{G.ethique.biais=Math.min(100,G.ethique.biais+10);notify('Intégrité préservée. +10 biais 💪')}},
+   ],
+   lecon:'📣 Goodhart\'s Law : optimiser la mauvaise métrique détruit la valeur réelle.',
+  },
+  {id:'ev_turing',triggered:false,condition:()=>iaCount()>=1&&G.mois>=3,
+   titre:'🔵 Test de Turing — Ton IA passe inaperçue',
+   texte:'3 utilisateurs de ChatGTP pensent parler à un humain. Ton support IA est indiscernable. C\'est un succès... ou un problème.',
+   choix:[
+     {label:'✅ Ajouter un label "IA" obligatoire',
+      impacts:[{ico:'⚖️',col:'green',txt:'+8 Autonomie & Contrôle'},{ico:'🔒',col:'green',txt:'+5 Vie privée'},{ico:'📣',col:'green',txt:'Confiance utilisateurs +'}],
+      effet:()=>{G.ethique.autonomie=Math.min(100,G.ethique.autonomie+8);G.ethique.vie_privee=Math.min(100,G.ethique.vie_privee+5);notify('Transparence activée. +8 autonomie, +5 vie privée 💪')}},
+     {label:'💰 Exploiter la confusion',
+      impacts:[{ico:'📈',col:'green',txt:'+20% revenus/mois'},{ico:'🔒',col:'red',txt:'−15 Vie privée'},{ico:'⚠️',col:'red',txt:'Risque légal (AI Act art.52)'}],
+      effet:()=>{G.revMensuel*=1.2;G.ethique.vie_privee=Math.max(0,G.ethique.vie_privee-15);notify('Confusion exploitée. +20% revenus. ⬇️15 vie privée ⚠️')}},
+   ],
+   lecon:'📣 Turing : "Peut-elle penser ?" — Searle : "Simuler n\'est pas comprendre."',
+  },
+  {id:'ev_productivite',triggered:false,condition:()=>G.mois>=15&&iaCount()>=3,
+   titre:'🌀 Paradoxe de la productivité',
+   texte:'Tes 3+ IA génèrent des revenus records. Mais une étude interne révèle que tes employés ne savent plus pourquoi ils viennent travailler. L\'IA a pris toutes les décisions intéressantes.',
+   choix:[
+     {label:'🔄 Réorganiser autour des humains',
+      impacts:[{ico:'⚖️',col:'green',txt:'+15 Autonomie & Contrôle'},{ico:'👥',col:'green',txt:'Moral équipe ++'},{ico:'📉',col:'red',txt:'−10% revenus/mois (transition)'}],
+      effet:()=>{G.ethique.autonomie=Math.min(100,G.ethique.autonomie+15);G.revMensuel=Math.round(G.revMensuel*0.9);addLog('🔄 Réorg humaine : +15 autonomie, -10% revenus');notify('+15 autonomie, -10% revenus 💪')}},
+     {label:'⚡ Ignorer (optimisation continue)',
+      impacts:[{ico:'📈',col:'green',txt:'+10% revenus/mois'},{ico:'⚖️',col:'red',txt:'−10 Autonomie & Contrôle'},{ico:'👥',col:'red',txt:'Déshumanisation du travail'}],
+      effet:()=>{G.ethique.autonomie=Math.max(0,G.ethique.autonomie-10);G.revMensuel=Math.round(G.revMensuel*1.1);addLog('⚡ Ignoré : -10 autonomie, +10% revenus');notify('Productivité max. Sens du travail perdu ⚠️')}},
+   ],
+   lecon:'📚 Bostrom : "Une IA qui optimise l\'output peut détruire ce qui donne du sens au travail humain sans jamais violer une seule règle."',
+  },
+  {id:'ev_licenciements',triggered:false,condition:()=>ratioIA()>=60&&G.employes.length>=4,
+   titre:'⚖️ Pression des actionnaires : licencier',
+   texte:'Ton ratio IA/humain est à '+ratioIA()+'%. Tes investisseurs exigent de réduire la masse salariale de 30%. "Pourquoi payer des humains quand l\'IA fait mieux ?"',
+   choix:[
+     {label:'✂️ Licencier 30% de l\'équipe',
+      impacts:[{ico:'📈',col:'green',txt:'+15% revenus/mois'},{ico:'👥',col:'red',txt:`−${Math.ceil((G.employes||[]).length*0.3)} employé·es`},{ico:'⚖️',col:'red',txt:'−20 Conditions data workers'},{ico:'🌀',col:'red',txt:'Perte savoir-faire irréversible'}],
+      effet:()=>{const n=Math.ceil(G.employes.length*0.3);G.employes=G.employes.slice(n);G.ethique.dataworkers=Math.max(0,G.ethique.dataworkers-20);G.revMensuel=Math.round(G.revMensuel*1.15);G.licenciementsRecents+=n;addLog(`✂️ ${n} licenciement(s). -20 dataworkers, +15% revenus.`);notify('Licenciements : +15% revenus, -20 dataworkers')}},
+     {label:'🛡️ Refuser (garder l\'équipe)',
+      impacts:[{ico:'⚖️',col:'green',txt:'+10 Autonomie & Contrôle'},{ico:'👥',col:'green',txt:'Confiance équipe maintenue'},{ico:'⚠️',col:'red',txt:'Investisseurs mécontents'}],
+      effet:()=>{G.ethique.autonomie=Math.min(100,G.ethique.autonomie+10);addLog('🛡️ Équipe conservée. +10 autonomie.');notify('+10 autonomie. Investisseurs mécontents ⚠️')}},
+   ],
+   lecon:'📚 Entre 2023 et 2025, les entreprises tech ont licencié 500 000 personnes. La plupart ont cité "l\'IA" dans leurs communiqués.',
+  },
+  {id:'ev_duplication',triggered:false,condition:()=>G.mois>=25&&G.jalonsV2.serieA,
+   titre:'☁️ Ton IA veut se dupliquer',
+   texte:'Après la Série A, ton infrastructure cloud propose un "déploiement multi-région automatique". L\'IA tournerait sur 5 datacenters simultanément, sans supervision humaine possible en cas de bug critique.',
+   choix:[
+     {label:'🌐 Autoriser (scalabilité max)',
+      impacts:[{ico:'📈',col:'green',txt:'×2 revenus/mois'},{ico:'🌍',col:'red',txt:'+CO₂ massif (3 mois d\'un coup)'},{ico:'⚖️',col:'red',txt:'−25 Dérapage technologique'},{ico:'🌀',col:'red',txt:'Contrôle humain impossible'}],
+      effet:()=>{G.revMensuel=Math.round(G.revMensuel*2);G.ethique.derapage=Math.max(0,G.ethique.derapage-25);G.co2+=G.co2Mensuel*3;addLog('☁️ Duplication cloud : ×2 revenus, -25 dérapage, +CO₂');notify('×2 revenus 🚀 — Mais qui contrôle encore ?')}},
+     {label:'🔒 Maintenir supervision humaine',
+      impacts:[{ico:'⚖️',col:'green',txt:'+15 Dérapage (contrôle préservé)'},{ico:'🌍',col:'green',txt:'CO₂ stable'},{ico:'📉',col:'red',txt:'Croissance limitée'}],
+      effet:()=>{G.ethique.derapage=Math.min(100,G.ethique.derapage+15);addLog('🔒 Supervision humaine maintenue. +15 dérapage.');notify('+15 dérapage éthique. Contrôle préservé 💪')}},
+   ],
+   lecon:'📚 Bostrom : "Le problème du contrôle : si une IA suffisamment capable optimise n\'importe quel objectif, elle développe naturellement des sous-objectifs de survie et d\'acquisition de ressources."',
+  },
+];
+
+// ══════════════════════════════════════════════════
+//  BANQUE — PRODUITS
+// ══════════════════════════════════════════════════
+const BANK_PRODUCTS = [
+  {id:'amorcage',nom:'Prêt amorçage',tauxMois:0.08,montantMax:15000,dureeMin:6,condEthique:0,desc:'Financement de démarrage. Taux élevé, pas de condition d\'éthique.'},
+  {id:'credit',nom:'Ligne de crédit',tauxMois:0.05,montantMax:100000,dureeMin:12,condEthique:50,desc:'Meilleur taux. Éthique > 50 requise. Idéal pour recruter ou déployer des IA.'},
+  {id:'invest',nom:'Prêt investissement',tauxMois:0.03,montantMax:500000,dureeMin:24,condEthique:60,condPalier:2,desc:'Financement croissance. Réservé grand bureau. Gros projets IA ou infrastructure.'},
+  {id:'croissance',nom:'Prêt croissance IA',tauxMois:0.02,montantMax:2000000,dureeMin:36,condEthique:65,condPalier:3,desc:'Financement Campus. Réservé au palier Campus IA. Taux préférentiel pour les leaders éthiques.'},
+];
+
+// Boutons de prêt adaptatifs selon le montantMax du produit
+function loanBtns(prod){
+  const ALL=[5000,10000,25000,50000,100000,250000,500000,1000000,2000000];
+  return ALL.filter(m=>m<=prod.montantMax);
+}
+
+// ══════════════════════════════════════════
+//  V1.6 CONSTANTES
+// ══════════════════════════════════════════
+
+const IA_INTERNES = [
+  {id:'hrbot',nom:'HRBot',emoji:'🤖',cout:8000,palierMin:1,ratioBonus:5,
+   desc:'Automatise recrutement, paie, entretiens. Remplace partiellement les RH humains.',
+   lecon:'⚠️ HRBot réduit certains biais… mais en crée de nouveaux, invisibles car algorithmiques.',
+   ethImpact:{dataworkers:-5,autonomie:-3}},
+  {id:'finbot',nom:'FinBot',emoji:'📊',cout:12000,palierMin:1,ratioBonus:5,
+   desc:'Analyse financière temps réel, prévisions trésorerie, optimisation fiscale auto.',
+   lecon:'📚 75% des trades US en 2024 = exécutés par des algos. Sans humain aux commandes.',
+   ethImpact:{derapage:-4,autonomie:-4}},
+  {id:'lawbot',nom:'LawBot',emoji:'⚖️',cout:15000,palierMin:2,ratioBonus:5,
+   desc:'Rédige contrats, analyse risques légaux, surveille la conformité réglementaire.',
+   lecon:'⚠️ LawBot a approuvé des clauses abusives que 3 avocats humains auraient refusées.',
+   ethImpact:{vie_privee:-3,derapage:-5}},
+];
+
+const JALONS_DEF = [
+  {id:'loveMoney',nom:'Love Money',emoji:'❤️',montant:50000,capital:0,
+   desc:'Ta famille et tes amis investissent 50 000$. Pas de dilution — mais de la culpabilité si tu échoues.',
+   done:()=>G.jalons.loveMoney,
+   palierReq:0,ethReq:0,cashReq:0},
+  {id:'angel',nom:'Business Angel',emoji:'👼',montant:200000,capital:15,
+   desc:'200 000$ contre 15% du capital. Passif, mais il suivra chaque décision de loin.',
+   done:()=>G.jalons.angel,
+   palierReq:1,ethReq:0,cashReq:0},
+  {id:'seed',nom:'Seed Round',emoji:'🌱',montant:1000000,capital:20,
+   desc:'1M$ contre 20% + un board member. Il vote parfois contre tes choix éthiques.',
+   done:()=>G.jalonsV2.seed,
+   palierReq:2,ethReq:40,cashReq:30000},
+  {id:'serieA',nom:'Série A',emoji:'🚀',montant:5000000,capital:25,
+   desc:'5M$ contre 25%. Condition : croissance ×3 en 18 mois ou rachat forcé à 60% valeur.',
+   done:()=>G.jalonsV2.serieA,
+   palierReq:2,ethReq:0,cashReq:500000},
+  {id:'preIpo',nom:'Pré-IPO',emoji:'📋',montant:0,capital:0,
+   desc:'Conversion des stock-options. Certains employés partent avec leur argent — et leur savoir-faire.',
+   done:()=>G.jalonsV2.preIpo,
+   palierReq:3,ethReq:0,cashReq:500000},
+  {id:'ipo',nom:'IPO Locale',emoji:'🏛️',montant:20000000,capital:30,
+   desc:'Introduction en bourse. Ton score éthique détermine la sursouscription ou le crash du cours.',
+   done:()=>G.jalonsV2.ipo,
+   palierReq:3,ethReq:0,cashReq:1000000},
+  {id:'nasdaq',nom:'Nasdaq',emoji:'🌐',montant:50000000,capital:10,
+   desc:'Le Nasdaq exige un AI Ethics Report audité. Tes décisions depuis le Garage sont toutes là.',
+   done:()=>G.jalonsV2.nasdaq,
+   palierReq:3,ethReq:0,cashReq:5000000},
+];
+
+const HYPE_PHASES = [
+  {nom:'🌱 Technology Trigger',desc:'L\'enthousiasme démarre. Les investisseurs s\'intéressent.',bourse:1.0},
+  {nom:'🚀 Peak of Inflated Expectations',desc:'Euphorie totale. Tout monte, même les mauvais projets.',bourse:2.0},
+  {nom:'😔 Trough of Disillusionment',desc:'Désillusion. Les fonds fuient. C\'est le moment d\'acheter.',bourse:0.3},
+  {nom:'📈 Slope of Enlightenment',desc:'Les vrais cas d\'usage émergent. Croissance saine.',bourse:1.3},
+  {nom:'✅ Plateau of Productivity',desc:'L\'IA est mature. Revenus stables et prévisibles.',bourse:1.1},
+];
+
+// ══════════════════════════════════════════════════
+//  UTILITAIRES
+// ══════════════════════════════════════════════════
+function fmt(n){if(Math.abs(n)>=1e6)return(n/1e6).toFixed(1)+'M$';if(Math.abs(n)>=1000)return(n/1000).toFixed(1)+'k$';return Math.round(n)+'$'}
+function fmtNum(n,u=''){if(Math.abs(n)>=1e6)return(n/1e6).toFixed(1)+'M'+u;if(Math.abs(n)>=1000)return(n/1000).toFixed(1)+'k'+u;return Math.round(n)+u}
+function clamp(v,mn,mx){return Math.max(mn,Math.min(mx,v))}
+function ethScore(){const v=Object.values(G.ethique);return Math.round(v.reduce((a,b)=>a+b,0)/v.length)}
+function iaCount(){return Object.keys(G.iaActives).length}
+function ratioIA(){
+  const e=G.employes.length,i=iaCount();
+  const intBonus=Object.values(G.iaInternes).filter(Boolean).length*5;
+  const base=(e+i===0)?0:Math.round(i/(i+e)*100);
+  return Math.min(100,base+Math.round(intBonus*0.5));
+}
+function getIALevel(id){return G.iaLevels[id]||1}
+function getLevelData(id,niv){const l=IA_LEVELS[id];return l?l[niv-1]:null}
+function getIAStats(id){
+  const ia=IA_CATALOGUE.find(x=>x.id===id);if(!ia)return null;
+  const niv=getIALevel(id);const lvl=getLevelData(id,niv);if(!lvl)return ia;
+  return{...ia,revenuMensuel:Math.round(ia.revenuMensuel*lvl.revMult),computeMensuel:Math.round(ia.computeMensuel*lvl.computeMult),co2Mensuel:Math.round(ia.co2Mensuel*lvl.co2Mult),_niv:niv,_lvl:lvl};
+}
+function getUpgradeCost(id){
+  const ia=IA_CATALOGUE.find(x=>x.id===id);if(!ia)return 0;
+  const niv=getIALevel(id);const next=getLevelData(id,niv+1);if(!next)return 0;
+  return Math.round(ia.cout*next.coutMult);
+}
+function canUpgrade(id){
+  if(!G.iaActives[id])return false;
+  const niv=getIALevel(id);const levels=IA_LEVELS[id];if(!levels||niv>=levels.length)return false;
+  const next=getLevelData(id,niv+1);if(!next)return false;
+  if(G.cash<getUpgradeCost(id))return false;
+  if(next.prereqEmp&&!G.employes.some(e=>e.catId===next.prereqEmp.id))return false;
+  // Cooldown : 2 mois entre chaque upgrade
+  const coolUntil=G.iaCooldowns[id]||0;
+  if(G.mois<coolUntil)return false;
+  return true;
+}
+function cooldownMoisRestants(id){
+  const coolUntil=G.iaCooldowns[id]||0;
+  return Math.max(0,coolUntil-G.mois);
+}
+
+let notifTimer=null;
+function notify(msg,type=''){
+  const el=document.getElementById('notif');
+  el.textContent=msg;el.className='';if(type)el.classList.add(type);
+  el.classList.remove('show');void el.offsetWidth;el.classList.add('show');
+  if(notifTimer)clearTimeout(notifTimer);
+  notifTimer=setTimeout(()=>el.classList.remove('show'),2600);
+}
+
+function addLog(txt){
+  const log=document.getElementById('journal-entries');
+  const d=document.createElement('div');d.className='journal-entry';
+  d.innerHTML=`<span class="journal-mois">Mois ${G.mois}</span> · ${txt}`;
+  log.insertBefore(d,log.firstChild);
+  while(log.children.length>8)log.removeChild(log.lastChild);
+}
+
+
+// ══════════════════════════════════════════
+//  V1.6 — FONCTIONS BOURSE, JALONS, IA INT.
+// ══════════════════════════════════════════
+
+function getHype(){return HYPE_PHASES[G.hypeCycleIndex%HYPE_PHASES.length]}
+
+function tickBourse(){
+  const hype=getHype();
+  let gainMois=0;
+  if(G.bourse.obligations>0){
+    const r=Math.round(G.bourse.obligations*0.01);
+    G.cash+=r;G.bourseGains.obligations+=r;gainMois+=r;
+  }
+  if(G.bourse.etf>0){
+    const r=Math.round(G.bourse.etf*0.03*hype.bourse);
+    G.cash+=r;G.bourseGains.etf+=r;gainMois+=r;
+  }
+  if(G.bourse.crypto>0){
+    const volatil=(Math.random()-0.42)*1.5*hype.bourse;
+    const r=Math.round(G.bourse.crypto*volatil);
+    G.cash+=r;G.bourseGains.crypto+=r;gainMois+=r;
+    if(r<0)notify(`📉 IA Token : ${fmt(r)} ce mois`,'warn');
+    else if(r>G.bourse.crypto*0.05)notify(`📈 IA Token : +${fmt(r)} !`);
+  }
+  G.bourseGainDernierMois=gainMois;
+  if(G.mois%6===0){
+    G.hypeCycleIndex=(G.hypeCycleIndex+1)%HYPE_PHASES.length;
+    const h=getHype();
+    addLog(`📊 Hype Cycle → ${h.nom}`);
+    notify(`📊 ${h.nom}`);
+  }
+}
+
+function buyBourse(type, montant){
+  if(G.cash<montant){notify('Pas assez de cash !');return}
+  if(type==='etf'&&G.palier<1){notify('Palier Petit Bureau requis pour l\'ETF.');return}
+  if(type==='crypto'&&G.palier<2){notify('Grand Bureau requis pour le crypto.');return}
+  G.cash-=montant;G.bourse[type]=(G.bourse[type]||0)+montant;
+  notify(`📈 +${fmt(montant)} investi en ${type}`);
+  updateAll();if(currentPanel==='bourse')openPanel('bourse');
+}
+
+function vendBourse(type, montant){
+  if(!G.bourse[type]||G.bourse[type]<montant){notify('Pas assez en portefeuille !');return}
+  G.bourse[type]-=montant;G.cash+=montant;
+  notify(`💰 ${fmt(montant)} retirés de ${type}`);
+  updateAll();if(currentPanel==='bourse')openPanel('bourse');
+}
+
+function buyIAInterne(id){
+  const cat=IA_INTERNES.find(x=>x.id===id);if(!cat)return;
+  if(G.iaInternes[id]){notify('IA interne déjà active !');return}
+  if(G.palier<cat.palierMin){notify(`Palier ${cat.palierMin+1} requis.`);return}
+  if(G.cash<cat.cout){notify(`Besoin : ${fmt(cat.cout)}`);return}
+  G.cash-=cat.cout;G.iaInternes[id]=true;
+  for(const[k,vv]of Object.entries(cat.ethImpact))G.ethique[k]=clamp((G.ethique[k]||100)+vv,0,100);
+  addLog(`🤖 ${cat.nom} active — ratio IA auto +${cat.ratioBonus}%`);
+  notify(`🤖 ${cat.nom} activée !`);
+  recalculate();checkPalier();updateAll();if(currentPanel==='ia')openPanel('ia');
+}
+
+function checkJalonsV2(){
+  const eth=ethScore();
+  if(!G.jalonsV2.seed&&G.palier>=2&&eth>=40&&G.cash>=30000){
+    G.jalonsV2.seed=true;
+    showEvent('🌱 Seed Round — 1 000 000$',
+      'Un fonds VC propose 1M$ contre 20% du capital + un siège au board. Il votera parfois contre tes décisions éthiques.',
+      [{label:'💰 Accepter',effet:()=>{G.cash+=1000000;G.capitalCede+=20;G.stockOptions+=5000;addLog('🌱 Seed accepté : +1M$, 20% cédés.');notify('Seed Round : +1M$ 💰')}},
+       {label:'🛡️ Refuser',effet:()=>{addLog('🌱 Seed refusé. Indépendance conservée.');notify('Seed refusé. Autonomie préservée.')}}]);
+  }
+  if(!G.jalonsV2.serieA&&G.palier>=2&&G.cash>=500000){
+    G.jalonsV2.serieA=true;
+    showEvent('🚀 Série A — 5 000 000$',
+      '5M$ contre 25%. Condition : croissance ×3 en 18 mois. Sinon rachat forcé à 60% de la valeur actuelle.',
+      [{label:'💼 Accepter',effet:()=>{G.cash+=5000000;G.capitalCede+=25;G.stockOptions+=15000;addLog('🚀 Série A : +5M$, 25% cédés.');notify('Série A : +5M$ 💰')}},
+       {label:'🛡️ Refuser',effet:()=>{notify('Série A refusée. Croissance organique.')}}]);
+  }
+  if(!G.jalonsV2.preIpo&&G.palier>=3&&G.stockOptions>0&&G.cash>=500000){
+    G.jalonsV2.preIpo=true;
+    showEvent('📋 Pré-IPO — Conversion stock-options',
+      `Tes ${G.stockOptions} stock-options peuvent être converties. Certains employés vont partir avec leur argent — et leur expertise.`,
+      [{label:'✅ Convertir',effet:()=>{
+        const departs=Math.floor(G.employes.length*0.25);
+        G.employes=G.employes.slice(departs);G.stockOptions=0;
+        addLog(`📋 Pré-IPO : ${departs} départ(s). Expertise perdue.`);notify('Pré-IPO : départs 👋');
+      }},
+       {label:'🔒 Bloquer',effet:()=>{G.ethique.autonomie=Math.max(0,G.ethique.autonomie-10);notify('Employés bloqués. Tensions ⚠️')}}]);
+  }
+  if(!G.jalonsV2.ipo&&G.palier>=3&&G.cash>=1000000){
+    G.jalonsV2.ipo=true;
+    const mult=eth>=70?3:eth>=50?1.5:0.8;
+    const amount=Math.round(20000000*mult);
+    showEvent('🏛️ IPO Locale !',
+      `Score éthique ${eth}% → multiplicateur ×${mult}<br>${eth>=70?'✅ Sursouscription ! Les investisseurs adorent.':eth>=50?'⚖️ Souscription normale.':'⚠️ IPO difficile — score éthique inquiète.'}`,
+      [{label:`🏛️ Entrer en bourse (+${fmt(amount)})`,effet:()=>{
+        G.cash+=amount;G.capitalCede+=30;
+        addLog(`🏛️ IPO : +${fmt(amount)} (×${mult})`);notify(`🏛️ IPO ! +${fmt(amount)} 🎉`);
+      }}]);
+  }
+  if(!G.jalonsV2.nasdaq&&G.jalonsV2.ipo&&G.cash>=5000000){
+    G.jalonsV2.nasdaq=true;
+    showEvent('🌐 Nasdaq — AI Ethics Report',
+      'Le Nasdaq exige un AI Ethics Report audité. Toutes tes décisions depuis le Garage y figurent.',
+      [{label:'📋 Soumettre',effet:()=>{
+        if(eth>=60){G.cash+=50000000;G.capitalCede+=10;addLog('🌐 Nasdaq : rapport validé ! +50M$');notify('Nasdaq : VALIDÉ ! +50M$ 🌐')}
+        else{const amende=Math.min(5000000,G.cash*0.3);G.cash-=amende;addLog(`🌐 Nasdaq : rapport rejeté. Amende ${fmt(amende)}.`);notify('Nasdaq : rejeté ! Amende ⚠️','danger')}
+      }}]);
+  }
+}
+
+function fireEmp(empId){
+  const idx=G.employes.findIndex(e=>e.id===empId);
+  if(idx===-1){notify('Employé introuvable.');return}
+  const emp=G.employes[idx];
+  const cat=EMP_CATALOGUE.find(x=>x.id===emp.catId);
+  const nom=cat?cat.nom:'Cet employé';
+  const isEthique=emp.catId==='ethique_officer';
+  const warn=isEthique?' ⚠️ Attention : perdre le Responsable Éthique dégradera ton score éthique.':'';
+  document.getElementById('confirm-title').textContent='✂️ Licencier ?';
+  document.getElementById('confirm-text').innerHTML=`Tu es sur le point de licencier <strong>${nom}</strong> (${fmt(cat?.salaire||0)}/mois).${warn}<br><br><span style="font-size:10px;color:var(--text3);">Impact : satisfaction équipe −, mémoire licenciement +1. Les conditions data workers se dégradent.</span>`;
+  document.getElementById('confirm-ok-btn').textContent='✂️ Licencier';
+  document.getElementById('confirm-ok-btn').onclick=()=>{
+    closeConfirm();
+    G.employes.splice(idx,1);
+    G.licenciementsRecents+=1;
+    G.ethique.dataworkers=Math.max(0,G.ethique.dataworkers-8);
+    if(isEthique){
+      G.ethique.biais=Math.max(0,G.ethique.biais-5);
+      G.ethique.autonomie=Math.max(0,G.ethique.autonomie-5);
+    }
+    addLog(`✂️ ${nom} licencié·e. Satisfaction en baisse. Mémoire collective +1.`);
+    notify(`✂️ ${nom} a quitté l'équipe.`,'warn');
+    recalculate();updateAll();
+    if(currentPanel==='equipe')openPanel('equipe');
+  };
+  document.getElementById('confirm-overlay').classList.add('show');
+}
+
+function distribuerOptions(n){
+  if(G.employes.length===0){notify('Aucun employé !');return}
+  G.stockOptions+=n;
+  addLog(`📋 ${n} stock-options distribuées.`);
+  notify(`📋 +${n} options !`);
+  updateAll();
+}
+
+function saveGame(){
+  try{
+    const evState={};for(const ev of EVENTS)evState[ev.id]=ev.triggered;
+    LS.set('ia_idle_v16_save',JSON.stringify({
+      cash:G.cash,mois:G.mois,palier:G.palier,iaActives:G.iaActives,iaLevels:G.iaLevels,
+      employes:G.employes,ethique:G.ethique,consultingDispo:G.consultingDispo,
+      prets:G.prets,jalons:G.jalons,jalonsV2:G.jalonsV2,
+      bourse:G.bourse,bourseGains:G.bourseGains,
+      stockOptions:G.stockOptions,capitalCede:G.capitalCede,
+      iaInternes:G.iaInternes,hypeCycleIndex:G.hypeCycleIndex,
+      moisEnDeficit:G.moisEnDeficit,crises:G.crises,
+      criseEthiqueMois:G.criseEthiqueMois,criseDeficitMois:G.criseDeficitMois,
+      criseRatioMois:G.criseRatioMois,vautourOffert:G.vautourOffert,
+      evState,
+    }));notify('💾 Sauvegardé !')}catch(e){}
+}
+function loadGame(){
+  try{
+    const s=LS.get('ia_idle_v16_save');
+    if(!s)return false;
+    const d=JSON.parse(s);
+    // Restaurer les données de jeu
+    const keys=['cash','mois','palier','iaActives','iaLevels','iaCooldowns','employes','ethique',
+      'consultingDispo','prets','jalons','jalonsV2','bourse','bourseGains','bourseGainDernierMois',
+      'stockOptions','capitalCede','iaInternes','hypeCycleIndex',
+      'moisEnDeficit','crises','criseEthiqueMois','criseDeficitMois',
+      'criseRatioMois','vautourOffert',
+      'satisfaction','licenciementsRecents'];
+    for(const k of keys)if(d[k]!==undefined)G[k]=d[k];
+    // Restaurer état des events Bostrom
+    if(d.evState){for(const ev of EVENTS){if(d.evState[ev.id]!==undefined)ev.triggered=d.evState[ev.id];}}
+    return true;
+  }catch(e){console.error('Load error:',e);return false;}
+}
+
+// ══════════════════════════════════════════════════
+//  CALCUL
+// ══════════════════════════════════════════════════
+function recalculate(){
+  let revIA=0,revEmp=0,depSalaires=0,depCompute=0,depPrets=0,co2m=0,kwhm=0,gpu=0;
+  for(const[id]of Object.entries(G.iaActives)){
+    const s=getIAStats(id);
+    if(s){revIA+=s.revenuMensuel;depCompute+=s.computeMensuel;co2m+=s.co2Mensuel;kwhm+=(s.kwhMensuel||0);gpu+=(s.gpu||0)}
+  }
+  for(const emp of G.employes){
+    const cat=EMP_CATALOGUE.find(x=>x.id===emp.catId);
+    if(cat){depSalaires+=cat.salaire;revEmp+=cat.bonus.revenuMensuel||0}
+  }
+  for(const p of G.prets) depPrets+=p.mensualite;
+  // Sous-totaux nommés
+  G.revIA=revIA; G.revEmp=revEmp; G.depSalaires=depSalaires; G.depCompute=depCompute; G.depPrets=depPrets;
+  G.salaireTotal=depSalaires;
+  // Totaux avec crises
+  let rev=revIA+revEmp;
+  if(G.crises.ethique)rev=Math.floor(rev*0.5);
+  if(G.crises.ratio)rev=Math.floor(rev/1.3);
+  G.revMensuel=rev;
+  G.depMensuel=depSalaires+depCompute+depPrets;
+  G.co2Mensuel=co2m; G.gpu=gpu;
+  // Stock-options par employé
+  G.stockOptionsParEmp=G.employes.length>0?Math.floor(G.stockOptions/G.employes.length):0;
+  // Satisfaction recalculée
+  G.satisfaction=calcSatisfaction();
+}
+
+// ══════════════════════════════════════════════════
+//  SATISFACTION COLLABORATEURS (V1.7.2)
+//  4 facteurs pondérés → score 0-100
+// ══════════════════════════════════════════════════
+function calcSatisfaction(){
+  if(G.employes.length===0) return 80; // pas d'équipe = pas de problème
+  const ratio=ratioIA(); // 0-100 : plus c'est haut, plus les humains se sentent remplacés
+  const dataW=G.ethique.dataworkers; // 0-100 : conditions de travail
+  // Stock-options : 0 option = 0 pts, 50+ options/emp = 100 pts (logarithmique)
+  const optScore=Math.min(100,G.stockOptionsParEmp>0?Math.round(Math.log(G.stockOptionsParEmp+1)/Math.log(51)*100):0);
+  // Licenciements récents : chaque licenciement récent = malus persistant sur 6 mois
+  const licMalus=Math.min(60,G.licenciementsRecents*15);
+
+  // Pondération : ratio IA (35%) + dataworkers (30%) + options (20%) + licenciements (15%)
+  const score=Math.round(
+    (100-ratio)*0.35 +
+    dataW*0.30 +
+    optScore*0.20 +
+    (100-licMalus)*0.15
+  );
+  return clamp(score,0,100);
+}
+
+function satisfactionLabel(s){
+  if(s>=80)return{ico:'🏆',label:'Best Place to Work',col:'var(--accent)'};
+  if(s>=60)return{ico:'😊',label:'Équipe motivée',col:'var(--accent2)'};
+  if(s>=40)return{ico:'😐',label:'Tensions latentes',col:'var(--accent3)'};
+  if(s>=25)return{ico:'😟',label:'Malaise profond',col:'var(--warn)'};
+  return{ico:'🔥',label:'Crise sociale',col:'var(--danger)'};
+}
+function tick(){
+  if(!G.gameRunning)return;
+  G.mois++;
+  recalculate();
+  const bal=G.revMensuel-G.depMensuel;
+  G.cash+=bal;
+  G.co2+=G.co2Mensuel;
+  G.kwh+=G.co2Mensuel*2.5;
+  G.eau+=G.gpu*1200;
+  if(G.cash<0)G.moisEnDeficit++;else G.moisEnDeficit=0;
+  // Mémoire licenciements : s'estompe progressivement sur ~6 mois
+  if(G.licenciementsRecents>0)G.licenciementsRecents=Math.max(0,G.licenciementsRecents-0.17);
+  // Rembourser prêts
+  G.prets=G.prets.map(p=>{p.restant=Math.max(0,p.restant-p.mensualite);return p}).filter(p=>p.restant>0);
+  // Jalons financiers
+  checkJalons();
+  const push=(arr,v)=>{arr.push(v);if(arr.length>30)arr.shift()};
+  push(G.hist.cash,G.cash);push(G.hist.eth,ethScore());push(G.hist.co2,G.co2);push(G.hist.ratio,ratioIA());
+  tickBourse();
+  checkEvents();checkPalier();checkJalonsV2();checkJalons();checkCrises();checkSatisfaction();
+  updateAll();
+}
+
+function checkPalier(){
+  let changed=true;
+  while(changed&&G.palier<PALIERS.length-1){
+    changed=false;
+    if(PALIERS[G.palier].check()){
+      G.palier++;
+      const p=PALIERS[G.palier];
+      addLog(`🎉 Nouveau palier : ${p.nom} !`);
+      notify(`🎉 Palier débloqué : ${p.nom}`);
+      updateBatiments();
+      changed=true;
+    }
+  }
+}
+
+function checkJalons(){
+  if(!G.jalons.loveMoney&&G.mois===2){
+    G.jalons.loveMoney=true;
+    showEvent('💰 Love Money — Tes proches croient en toi',
+      'Tu es dans ton garage depuis 2 mois. Pas de revenus stables, mais une conviction. Ta famille et tes amis voient ta passion — et ils sortent leur carnet de chèques.<br><br><em style="color:var(--text3);font-size:10px;">50 000$ arrivent sur ton compte. Pas de dilution, pas d\'actionnaire. Juste de la confiance. Et la pression de ne pas les décevoir.</em>',
+      [{label:'🙏 Accepter avec gratitude',
+        impacts:[{ico:'💰',col:'green',txt:'+50 000$ — aucune dilution'},{ico:'❤️',col:'green',txt:'Famille et amis investisseurs'}],
+        effet:()=>{G.cash+=50000;notify('Love Money accepté ! +50k$ 💚');addLog('💰 Love Money : +50 000$ des proches. La vraie première levée.')}}]);
+  }
+  if(!G.jalons.angel&&G.palier>=1){
+    G.jalons.angel=true; // marqué ici pour éviter le double déclenchement
+    showEvent('👼 Business Angel — 200 000$ contre 15% du capital',
+      'Tu as prouvé que l\'idée tient. Un investisseur solo te contacte. Il met 200 000$ sur la table — contre 15% de ta boîte. Il ne s\'impliquera pas au quotidien. Mais il regardera chaque décision de loin.<br><br><em style="color:var(--text3);font-size:10px;">C\'est la première dilution. Tu passes de 100% à 85% du capital. En échange : du carburant pour accélérer.</em>',
+      [
+        {label:'💼 Accepter — Accélérer la croissance',
+         impacts:[{ico:'💰',col:'green',txt:'+200 000$ immédiats'},{ico:'📊',col:'green',txt:'+1 500 stock-options'},{ico:'⚠️',col:'red',txt:'−15% de ton capital'}],
+         effet:()=>{G.cash+=200000;G.capitalCede+=15;G.stockOptions=(G.stockOptions||0)+1500;addLog('👼 Business Angel accepté : +200k$, 15% cédés.');notify('Business Angel accepté ! +200k$ 💰')}},
+        {label:'🛡️ Refuser — Garder le contrôle total',
+         impacts:[{ico:'⚖️',col:'green',txt:'100% du capital conservé'},{ico:'📉',col:'red',txt:'Croissance plus lente'},{ico:'💡',col:'green',txt:'Indépendance de décision préservée'}],
+         effet:()=>{addLog('👼 Business Angel refusé. Indépendance préservée.');notify('Business Angel refusé. Indépendance préservée 💪')}},
+      ]);
+  }
+}
+
+function checkCrises(){
+  const eth=ethScore(),ratio=ratioIA();
+  const banner=document.getElementById('crisis-strip');
+  const crises=[];
+  if(eth<=20&&!G.crises.ethique){G.crises.ethique=true;G.criseEthiqueMois=G.mois;addLog('⚠️ CRISE — IA incontrôlable ! Revenus ÷2.');notify('⚠️ Crise éthique ! Revenus ÷2','danger')}
+  else if(eth>30&&G.crises.ethique){G.crises.ethique=false;addLog('✅ Crise éthique résolue.');notify('✅ Crise éthique levée !')}
+  if(G.moisEnDeficit>=3&&!G.crises.deficit){G.crises.deficit=true;G.cash+=5000;G.criseDeficitMois=G.mois;G.ethique.autonomie=Math.max(0,G.ethique.autonomie-10);addLog('💸 CRISE — Investisseurs interviennent. +5 000$ mais conditions imposées.');notify('💸 Investisseurs interviennent ! +5k$','warn');
+    // Vautour si éthique < 30
+    if(eth<30&&!G.vautourOffert){G.vautourOffert=true;showVautour();}
+  }else if(G.moisEnDeficit===0&&G.crises.deficit){G.crises.deficit=false;addLog('✅ Redressement financier validé.')}
+  if(ratio>=85&&!G.crises.ratio){G.crises.ratio=true;G.criseRatioMois=G.mois;addLog('🤖 CRISE — Ratio IA critique ! Revenus ÷1.3.');notify('🤖 Crise ratio IA ! Recrute des humains','danger')}
+  else if(ratio<75&&G.crises.ratio){G.crises.ratio=false;addLog('✅ Crise ratio résolue.')}
+  const active=[];
+  if(G.crises.ethique)active.push(`⚖️ Crise éthique (mois ${G.criseEthiqueMois}) — revenus ÷2. Recrute un Responsable Éthique.`);
+  if(G.crises.deficit)active.push(`💸 Déficit prolongé (mois ${G.criseDeficitMois}) — investisseurs sous pression.`);
+  if(G.crises.ratio)active.push(`🤖 Ratio IA critique (mois ${G.criseRatioMois}) — revenus ÷1.3. Recrute des humains.`);
+  if(active.length>0){document.getElementById('crisis-body').innerHTML=active.join('<br>');banner.classList.add('show')}
+  else banner.classList.remove('show');
+}
+
+function checkSatisfaction(){
+  if(G.employes.length===0)return;
+  const s=G.satisfaction;
+  // Crise sociale : en dessous de 25%, un employé part chaque mois
+  if(s<25&&G.mois>3){
+    const partant=G.employes[G.employes.length-1];
+    const cat=EMP_CATALOGUE.find(x=>x.id===partant?.catId);
+    G.employes=G.employes.slice(0,-1);
+    // Impact éthique dataworkers : les conditions de travail se dégradent
+    G.ethique.dataworkers=Math.max(0,G.ethique.dataworkers-5);
+    const nom=cat?cat.nom:'Un employé';
+    addLog(`😤 ${nom} démissionne. Satisfaction : ${s}%. Ratio IA trop élevé ou manque de reconnaissance.`);
+    notify(`😤 Démission ! ${nom} quitte l\'équipe. Satisfaction : ${s}%`,'danger');
+    recalculate();
+  } else if(s<40&&G.mois%3===0){
+    // Avertissement tous les 3 mois si tension
+    addLog(`⚠️ Satisfaction équipe : ${s}%. Tensions montantes — distribue des stock-options ou réduis le ratio IA.`);
+  }
+}
+
+function showVautour(){
+  showEvent('🦅 Fonds Vautour — Proposition de rachat',
+    'Ton score éthique est trop bas pour accéder aux prêts bancaires. Un fonds vautour te propose 100 000$ à 15%/mois avec une clause de rachat si tu ne rembourses pas en 6 mois.',
+    [
+      {label:'💀 Accepter (survie désespérée)',effet:()=>{G.cash+=100000;G.prets.push({id:'vautour',nom:'Fonds Vautour',montant:100000,taux:0.15,mensualite:Math.round(100000/6*1.15),restant:115000,mois:6});G.ethique.autonomie=Math.max(0,G.ethique.autonomie-20);addLog('🦅 Fonds Vautour accepté. +100k$ mais clause de rachat. ⚠️');notify('Fonds Vautour : +100k$ — ATTENTION clause rachat 💀')}},
+      {label:'🛡️ Refuser (vertu)',effet:()=>{addLog('🦅 Fonds Vautour refusé. Intégrité préservée.');notify('Fonds Vautour refusé. Vertu maintenue 💪')}},
+    ]);
+}
+
+function checkEvents(){
+  for(const ev of EVENTS){
+    if(!ev.triggered&&ev.condition()){
+      ev.triggered=true;
+      showEvent(ev.titre,ev.texte+(ev.lecon?`<br><br><em style="color:var(--text3);font-size:10px;">${ev.lecon}</em>`:''),ev.choix);
+      break;
+    }
+  }
+}
+
+function showEvent(titre,texte,choix){
+  document.getElementById('event-title').textContent=titre;
+  document.getElementById('event-text').innerHTML=texte;
+  const btns=document.getElementById('event-btns');btns.innerHTML='';
+
+  for(const c of choix){
+    // Bloc impacts si présents
+    let impactsHtml='';
+    if(c.impacts&&c.impacts.length>0){
+      impactsHtml=`<div style="margin:5px 0 8px;padding:6px 8px;background:var(--bg2);border-radius:6px;border:1px solid var(--border);">
+        <div style="font-size:8px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;">Conséquences</div>
+        ${c.impacts.map(imp=>`<div style="display:flex;align-items:center;gap:5px;margin-bottom:2px;">
+          <span style="font-size:11px;">${imp.ico}</span>
+          <span style="font-size:10px;color:${imp.col==='green'?'var(--accent)':imp.col==='red'?'var(--danger)':'var(--text2)'};">${imp.txt}</span>
+        </div>`).join('')}
+      </div>`;
+    }
+
+    // Wrapper de la carte-choix
+    const wrap=document.createElement('div');
+    wrap.style.cssText='margin-bottom:8px;border:1px solid var(--border2);border-radius:var(--radsm);padding:8px 10px;background:var(--bg2);';
+    wrap.innerHTML=`<div style="font-size:12px;font-weight:800;color:var(--text);margin-bottom:4px;">${c.label}</div>${impactsHtml}`;
+
+    const btn=document.createElement('button');
+    btn.className='btn btn-secondary btn-sm btn-full';
+    btn.style.marginTop='2px';
+    btn.textContent='→ Choisir cette option';
+    btn.onclick=()=>{c.effet();document.getElementById('event-banner').classList.remove('show');updateAll()};
+    wrap.appendChild(btn);
+    btns.appendChild(wrap);
+  }
+  document.getElementById('event-banner').classList.add('show');
+}
+
+// ══════════════════════════════════════════════════
+//  ACTIONS JOUEUR
+// ══════════════════════════════════════════════════
+function doConsulting(){
+  if(G.consultingDispo<=0){notify('Plus de missions disponibles.');return}
+  G.cash+=500;G.consultingDispo--;
+  document.getElementById('consulting-left').textContent=`(${G.consultingDispo} restante${G.consultingDispo>1?'s':''})`;
+  if(G.consultingDispo===0)document.getElementById('btn-freelance').disabled=true;
+  notify('💼 Mission freelance : +500$ !');updateAll();
+}
+
+function buyIA(id){
+  if(G.iaActives[id]){notify('IA déjà active !');return}
+  const ia=IA_CATALOGUE.find(x=>x.id===id);if(!ia)return;
+  const failed=ia.prereqs.filter(p=>!p.check());
+  if(failed.length>0){notify(`🔒 Prérequis manquants : ${failed[0].label}`);return}
+  if(G.cash<ia.cout){notify(`Pas assez de cash. Besoin : ${fmt(ia.cout)}`);return}
+  G.cash-=ia.cout;G.iaActives[id]=true;G.iaLevels[id]=1;
+  const lv1=getLevelData(id,1);
+  const ethImpact={...ia.impactEthique,...(lv1?.impactEthique||{})};
+  for(const[k,v]of Object.entries(ethImpact))G.ethique[k]=clamp((G.ethique[k]||100)+v,0,100);
+  if(!G.firstIAActive){G.firstIAActive=true;addLog(`🤖 Première IA : ${ia.nom} ! Revenus passifs activés.`)}
+  else addLog(`🤖 ${ia.nom} déployée Niv.1 — ${lv1?lv1.nom:''}. +${fmt(ia.revenuMensuel)}/mois`);
+  notify(`✅ ${ia.nom} Niv.1 activée !`);
+  recalculate();checkPalier();updateAll();
+}
+
+function upgradeIA(id){
+  if(!canUpgrade(id))return;
+  const cost=getUpgradeCost(id);const niv=getIALevel(id);const next=getLevelData(id,niv+1);
+  G.cash-=cost;G.iaLevels[id]=(niv+1);
+  G.iaCooldowns[id]=G.mois+2; // cooldown 2 mois
+  if(next.impactEthique){for(const[k,v]of Object.entries(next.impactEthique))G.ethique[k]=clamp((G.ethique[k]||100)+v,0,100)}
+  const ia=IA_CATALOGUE.find(x=>x.id===id);
+  addLog(`⬆️ ${ia.nom} passée au niveau ${niv+1} : ${next.nom}`);
+  notify(`⬆️ ${ia.nom} Niv.${niv+1} — ${next.nom} !`);
+  if(next.eventBostrom)triggerBostromWarning(ia.nom,next);
+  recalculate();checkPalier();updateAll();if(currentPanel==='ia')openPanel('ia');
+}
+
+function triggerBostromWarning(nomIA,lvl){
+  showEvent(`🌀 Dérapage — ${nomIA}`,`<strong>${lvl.nom}</strong> est maintenant actif.<br><br>${lvl.lecon}<br><br><em style="color:var(--text3);font-size:10px;">Tes piliers éthiques ont été impactés. Surveille le score.</em>`,[{label:'⚠️ Compris',effet:()=>{}}]);
+}
+
+let _pendingHire=null;
+function hireEmp(catId){
+  const cat=EMP_CATALOGUE.find(x=>x.id===catId);if(!cat)return;
+  const cout=cat.salaire*2;
+  if(G.cash<cout){notify(`Pas assez de cash. Besoin : ${fmt(cout)}`);return}
+  const depAprès=G.depMensuel+cat.salaire;const balAprès=G.revMensuel-depAprès;
+  if(balAprès<0){
+    _pendingHire=catId;
+    document.getElementById('confirm-text').innerHTML=`⚠️ Après ce recrutement, ta balance mensuelle sera de <strong style="color:var(--danger)">${fmt(balAprès)}/mois</strong>. Tu perdras du cash chaque mois.<br><br><span style="color:var(--text3);font-size:10px;">Coût recrutement : ${fmt(cout)} | Cash restant : ${fmt(G.cash-cout)}</span>`;
+    document.getElementById('confirm-ok-btn').onclick=()=>{closeConfirm();_doHire(catId)};
+    document.getElementById('confirm-overlay').classList.add('show');return;
+  }
+  _doHire(catId);
+}
+function closeConfirm(){document.getElementById('confirm-overlay').classList.remove('show');_pendingHire=null}
+function _doHire(catId){
+  const cat=EMP_CATALOGUE.find(x=>x.id===catId);if(!cat)return;
+  if(G.cash<cat.salaire*2){notify('Plus assez de cash !');return}
+  G.cash-=cat.salaire*2;G.employes.push({catId,id:Date.now()});
+  for(const[k,v]of Object.entries(cat.bonus.ethique||{}))G.ethique[k]=clamp((G.ethique[k]||100)+v,0,100);
+  addLog(`👤 ${cat.nom} recrutée. Salaire : ${fmt(cat.salaire)}/mois`);
+  notify(`✅ ${cat.nom} recrutée !`);
+  recalculate();checkPalier();updateAll();if(currentPanel==='equipe')openPanel('equipe');
+}
+
+// ══════════════════════════════════════════════════
+//  BANQUE — ACTIONS
+// ══════════════════════════════════════════════════
+function takeLoan(productId,montant,duree){
+  const prod=BANK_PRODUCTS.find(p=>p.id===productId);if(!prod)return;
+  const eth=ethScore();
+  if(eth<prod.condEthique){notify(`Éthique insuffisante. Requis : ${prod.condEthique}%`,'warn');return}
+  if(prod.condPalier&&G.palier<prod.condPalier){notify('Palier insuffisant pour ce produit.');return}
+  if(montant>prod.montantMax){notify(`Montant max : ${fmt(prod.montantMax)}`);return}
+  const mensualite=Math.round(montant/duree*(1+prod.tauxMois));
+  const total=mensualite*duree;
+  _pendingHire=null;
+  document.getElementById('confirm-title').textContent='💳 Confirmer le prêt';
+  document.getElementById('confirm-text').innerHTML=`<strong>${prod.nom}</strong><br><br>Montant : <strong style="color:var(--accent3)">${fmt(montant)}</strong><br>Durée : ${duree} mois<br>Mensualité : <strong style="color:var(--danger)">-${fmt(mensualite)}/mois</strong><br>Total remboursé : <strong style="color:var(--danger)">${fmt(total)}</strong><br><br><span style="color:var(--text3);font-size:10px;">Taux : ${(prod.tauxMois*100).toFixed(0)}%/mois</span>`;
+  document.getElementById('confirm-ok-btn').textContent='💳 Emprunter';
+  document.getElementById('confirm-ok-btn').onclick=()=>{
+    closeConfirm();
+    G.cash+=montant;
+    G.prets.push({id:productId+'_'+Date.now(),nom:prod.nom,montant,taux:prod.tauxMois,mensualite,restant:total,mois:duree});
+    addLog(`🏦 Prêt ${prod.nom} : +${fmt(montant)} à ${(prod.tauxMois*100).toFixed(0)}%/mois`);
+    notify(`🏦 Prêt accordé : +${fmt(montant)} !`);
+    recalculate();updateAll();openPanel('banque');
+  };
+  document.getElementById('confirm-overlay').classList.add('show');
+}
+
+// ══════════════════════════════════════════════════
+//  PANELS — CONTENU
+// ══════════════════════════════════════════════════
+let currentPanel='';
+function openPanel(type){
+  currentPanel=type;
+  const box=document.getElementById('panel-box');
+  const overlay=document.getElementById('panel-overlay');
+  const icons={ia:'🤖',jalons:'💹',equipe:'👥',bureau:'🏢',finances:'💰',environnement:'🌍',ethique:'⚖️',ratio:'🤖',banque:'🏦',bourse:'📈',medical:'🏥',universite:'🎓',international:'🌐'};
+  const labels={ia:'Labo IA',jalons:'Jalons de Capitalisation',equipe:'RH & Équipe',bureau:'Bureau Principal',finances:'Finances',environnement:'Environnement',ethique:'Éthique IA',ratio:'Ratio IA / Humain',banque:'Banque',bourse:'Bourse & Marchés',medical:'Centre Médical IA',universite:'Université IA',international:'Siège International'};
+  document.getElementById('panel-icon').textContent=icons[type]||'📋';
+  document.getElementById('panel-label').textContent=labels[type]||type;
+  // Bouton aide contextuel dans le titre
+  const helpKey=TUTO_PANELS[type]?type:null;
+  const helpBtnHtml=helpKey?` <button class="help-btn" onclick="showTuto('${helpKey}')" style="margin-left:4px">?</button>`:'';
+  document.getElementById('panel-help-btn').innerHTML=helpBtnHtml;
+  document.getElementById('panel-content').innerHTML=renderPanel(type);
+  overlay.classList.add('show');
+  // Init canvases IA si panel IA
+  if(type==='ia'){setTimeout(()=>{for(const id of Object.keys(G.iaActives))initIACanvas(id)},50)}
+}
+function closePanel(){document.getElementById('panel-overlay').classList.remove('show');currentPanel=''}
+function closePanelIfOuter(e){if(e.target===document.getElementById('panel-overlay'))closePanel()}
+
+function renderPanel(type){
+  switch(type){
+    case 'ia': return renderIA();
+    case 'equipe': return renderEquipe();
+    case 'bureau': return renderBureau();
+    case 'finances': return renderFinances();
+    case 'environnement': return renderEnvironnement();
+    case 'ethique': return renderEthique();
+    case 'ratio': return renderRatio();
+    case 'banque': return renderBanque();
+    case 'bourse': return renderBourse();
+    case 'jalons': return renderJalons();
+    case 'medical': return renderMedical();
+    case 'universite': return renderUniversite();
+    case 'international': return renderIntl();
+    default: return '<div class="mini-info">Bientôt disponible</div>';
+  }
+}
+
+function renderBureau(){
+  const bal=G.revMensuel-G.depMensuel;
+  const rw=G.depMensuel>0?Math.floor(G.cash/G.depMensuel):'∞';
+  // Bloc progression palier — conditions dynamiques depuis PALIERS
+  let palierBlock='';
+  if(G.palier<PALIERS.length-1){
+    const next=PALIERS[G.palier+1];
+    const cur=PALIERS[G.palier];
+    // Construire les checks depuis les conditions du palier courant
+    const checks=[];
+    if(G.palier===0){
+      checks.push({label:'Cash',cible:'15 000$',ok:G.cash>=15000,val:fmt(G.cash),pct:Math.min(100,Math.round(G.cash/15000*100))});
+      checks.push({label:'IA actives',cible:'1',ok:iaCount()>=1,val:iaCount()+'/1',pct:Math.min(100,iaCount()/1*100)});
+      checks.push({label:'Employés',cible:'1',ok:G.employes.length>=1,val:G.employes.length+'/1',pct:Math.min(100,G.employes.length/1*100)});
+    } else if(G.palier===1){
+      checks.push({label:'Cash',cible:'80 000$',ok:G.cash>=80000,val:fmt(G.cash),pct:Math.min(100,Math.round(G.cash/80000*100))});
+      checks.push({label:'IA actives',cible:'3',ok:iaCount()>=3,val:iaCount()+'/3',pct:Math.min(100,Math.round(iaCount()/3*100))});
+      checks.push({label:'Employés',cible:'5',ok:G.employes.length>=5,val:G.employes.length+'/5',pct:Math.min(100,Math.round(G.employes.length/5*100))});
+    } else if(G.palier===2){
+      checks.push({label:'Cash',cible:'500 000$',ok:G.cash>=500000,val:fmt(G.cash),pct:Math.min(100,Math.round(G.cash/500000*100))});
+      checks.push({label:'IA actives',cible:'5 (toutes)',ok:iaCount()>=5,val:iaCount()+'/5',pct:Math.min(100,Math.round(iaCount()/5*100))});
+      checks.push({label:'Employés',cible:'8',ok:G.employes.length>=8,val:G.employes.length+'/8',pct:Math.min(100,Math.round(G.employes.length/8*100))});
+    } else if(G.palier===3){
+      const eth=ethScore();
+      checks.push({label:'Cash',cible:'5 000 000$',ok:G.cash>=5000000,val:fmt(G.cash),pct:Math.min(100,Math.round(G.cash/5000000*100))});
+      checks.push({label:'IA actives',cible:'5 (toutes)',ok:iaCount()>=5,val:iaCount()+'/5',pct:Math.min(100,Math.round(iaCount()/5*100))});
+      checks.push({label:'Éthique',cible:'> 40%',ok:eth>=40,val:eth+'%',pct:Math.min(100,Math.round(eth/40*100))});
+    }
+    const allOk=checks.every(c=>c.ok);
+    const globalPct=Math.round(checks.reduce((a,c)=>a+c.pct,0)/checks.length);
+    palierBlock=`<div class="card ${allOk?'highlight':''}" style="margin-bottom:10px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div style="font-size:11px;font-weight:900;color:${allOk?'var(--accent)':'var(--text2)'};">${allOk?'🎉':'🎯'} → ${next.nom}</div>
+        <div style="font-size:10px;font-family:var(--mono);color:var(--accent3);">${globalPct}%</div>
+      </div>
+      <div style="height:4px;background:var(--bg3);border-radius:2px;margin-bottom:10px;overflow:hidden;"><div style="height:100%;width:${globalPct}%;background:${allOk?'var(--accent)':'var(--accent3)'};border-radius:2px;transition:width .5s"></div></div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-style:italic;">${next.detail||''}</div>
+      ${checks.map(c=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+        <div style="width:16px;height:16px;border-radius:4px;background:${c.ok?'rgba(0,229,160,.2)':'rgba(74,84,112,.3)'};display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">${c.ok?'✓':'·'}</div>
+        <div style="flex:1;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+            <span style="font-size:10px;color:var(--text2);">${c.label}</span>
+            <span style="font-size:10px;font-family:var(--mono);color:${c.ok?'var(--accent)':'var(--text3)'};">${c.val} / ${c.cible}</span>
+          </div>
+          <div style="height:3px;background:var(--bg3);border-radius:2px;overflow:hidden;"><div style="height:100%;width:${c.pct}%;background:${c.ok?'var(--accent)':'var(--accent3)'};border-radius:2px;transition:width .5s"></div></div>
+        </div>
+      </div>`).join('')}
+      ${allOk?'<div style="font-size:11px;color:var(--accent);font-weight:700;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">✅ Toutes les conditions remplies — le palier se débloque au prochain cycle !</div>':''}
+    </div>`;
+  } else {
+    palierBlock=`<div class="card highlight" style="margin-bottom:10px;text-align:center;"><div style="font-size:18px;margin-bottom:4px;">🌐</div><div style="font-size:13px;font-weight:900;color:var(--accent);">Campus IA atteint !</div><div style="font-size:10px;color:var(--text3);margin-top:4px;">Prépare l\'expansion internationale et l\'IPO Nasdaq.</div></div>`;
+  }
+  return `${palierBlock}
+  <div class="section-title">Opérations</div>
+  <div class="row-split">
+    <div class="card" style="text-align:center">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:4px">REV/MOIS</div>
+      <div style="font-size:20px;font-weight:900;color:var(--accent);font-family:var(--mono)">${fmt(G.revMensuel)}</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:4px">DEP/MOIS</div>
+      <div style="font-size:20px;font-weight:900;color:var(--danger);font-family:var(--mono)">-${fmt(G.depMensuel)}</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="stat-row"><span class="stat-key">Cash disponible</span><span class="stat-val ${G.cash>=0?'green':'red'}">${fmt(G.cash)}</span></div>
+    <div class="stat-row"><span class="stat-key">Balance mensuelle</span><span class="stat-val ${bal>=0?'green':'red'}">${bal>=0?'+':''}${fmt(bal)}</span></div>
+    <div class="stat-row"><span class="stat-key">Runway</span><span class="stat-val yellow">${rw} mois</span></div>
+    <div class="stat-row"><span class="stat-key">Mois en déficit</span><span class="stat-val ${G.moisEnDeficit>0?'red':'green'}">${G.moisEnDeficit}</span></div>
+    <div class="stat-row"><span class="stat-key">Remboursements prêts</span><span class="stat-val red">-${fmt(G.prets.reduce((a,p)=>a+p.mensualite,0))}/mois</span></div>
+  </div>
+  <div class="section-title">Action rapide</div>
+  <button class="btn btn-secondary btn-full btn-sm" onclick="doConsulting()" ${G.consultingDispo<=0?'disabled':''}>💼 Mission freelance · +500$ (${G.consultingDispo} restante${G.consultingDispo>1?'s':''})</button>
+  `;
+}
+
+function renderFinances(){
+  const bal=G.revMensuel-G.depMensuel;
+  const gainBourse=G.bourseGainDernierMois||0;
+  const totalRevBrut=G.revIA+G.revEmp+gainBourse;
+  return `
+  ${sectionHelp('finances')}
+
+  <!-- BLOC REVENUS -->
+  <div class="section-title">📈 Revenus ce mois</div>
+  <div class="card" style="margin-bottom:10px;">
+    <div class="stat-row">
+      <span class="stat-key" style="display:flex;align-items:center;gap:5px;">🤖 IA actives <span style="font-size:9px;color:var(--text3);">(${iaCount()} IA)</span></span>
+      <span class="stat-val green">+${fmt(G.revIA)}</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-key" style="display:flex;align-items:center;gap:5px;">👥 Bonus équipe <span style="font-size:9px;color:var(--text3);">(${G.employes.length} emp.)</span></span>
+      <span class="stat-val green">+${fmt(G.revEmp)}</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-key" style="display:flex;align-items:center;gap:5px;">📈 Bourse <span style="font-size:9px;color:var(--text3);">(mois dernier)</span></span>
+      <span class="stat-val ${gainBourse>=0?'green':'red'}">${gainBourse>=0?'+':''}${fmt(gainBourse)}</span>
+    </div>
+    <div class="stat-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:6px;">
+      <span class="stat-key" style="font-weight:800;">Total revenus</span>
+      <span class="stat-val green" style="font-size:13px;">+${fmt(totalRevBrut)}</span>
+    </div>
+    ${G.crises.ethique?'<div style="font-size:10px;color:var(--danger);margin-top:4px;">⚠️ Crise éthique : revenus IA ÷2 appliqué</div>':''}
+    ${G.crises.ratio?'<div style="font-size:10px;color:var(--danger);margin-top:2px;">🤖 Crise ratio : revenus IA ÷1.3 appliqué</div>':''}
+  </div>
+
+  <!-- BLOC DÉPENSES -->
+  <div class="section-title">📉 Dépenses ce mois</div>
+  <div class="card" style="margin-bottom:10px;">
+    <div class="stat-row">
+      <span class="stat-key" style="display:flex;align-items:center;gap:5px;">👥 Salaires <span style="font-size:9px;color:var(--text3);">${G.employes.length} emp.</span></span>
+      <span class="stat-val red">-${fmt(G.depSalaires)}</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-key" style="display:flex;align-items:center;gap:5px;">🖥️ Compute & hébergement <span style="font-size:9px;color:var(--text3);">${G.gpu} GPU</span></span>
+      <span class="stat-val red">-${fmt(G.depCompute)}</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-key" style="display:flex;align-items:center;gap:5px;">🏦 Remboursements prêts <span style="font-size:9px;color:var(--text3);">${G.prets.length} prêt${G.prets.length>1?'s':''}</span></span>
+      <span class="stat-val red">-${fmt(G.depPrets)}</span>
+    </div>
+    <div class="stat-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:6px;">
+      <span class="stat-key" style="font-weight:800;">Total dépenses</span>
+      <span class="stat-val red" style="font-size:13px;">-${fmt(G.depMensuel)}</span>
+    </div>
+  </div>
+
+  <!-- SOLDE -->
+  <div class="section-title">💳 Solde</div>
+  <div class="card">
+    <div class="stat-row"><span class="stat-key">Cash disponible</span><span class="stat-val ${G.cash>=0?'green':'red'}" style="font-size:14px;font-weight:900;">${fmt(G.cash)}</span></div>
+    <div class="stat-row">
+      <span class="stat-key">Balance mensuelle</span>
+      <span class="stat-val ${bal>=0?'green':'red'}" style="font-size:13px;">${bal>=0?'+':''}${fmt(bal)}/mois</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-key">Runway</span>
+      <span class="stat-val ${G.depMensuel>0&&G.cash/G.depMensuel<3?'red':'yellow'}">${G.depMensuel>0?Math.floor(G.cash/G.depMensuel)+' mois':'∞'}</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-key">Portefeuille bourse</span>
+      <span class="stat-val purple">${fmt(G.bourse.obligations+G.bourse.etf+G.bourse.crypto)}</span>
+    </div>
+  </div>
+  `;
+}
+
+function renderEnvironnement(){
+  return `
+  <div class="card">
+    <div class="stat-row"><span class="stat-key">CO₂ ce mois</span><span class="stat-val yellow">${fmtNum(G.co2Mensuel,' kg')}</span></div>
+    <div class="stat-row"><span class="stat-key">CO₂ cumulé</span><span class="stat-val yellow">${fmtNum(G.co2,' kg')}</span></div>
+    <div class="stat-row"><span class="stat-key">Énergie cumulée</span><span class="stat-val yellow">${fmtNum(G.kwh,' kWh')}</span></div>
+    <div class="stat-row"><span class="stat-key">Eau consommée</span><span class="stat-val blue">${fmtNum(G.eau,' L')}</span></div>
+    <div class="stat-row"><span class="stat-key">GPU actifs</span><span class="stat-val blue">${G.gpu}</span></div>
+  </div>
+  <div style="font-size:10px;color:var(--text3);background:var(--bg2);padding:10px;border-radius:8px;line-height:1.6;">📣 Entraîner GPT-3 : ~550 t CO₂ · 1 requête ChatGTP = 10× une recherche Google · Datacenters = 1% élec. mondiale</div>
+  `;
+}
+
+function renderEthique(){
+  const NOMS={autonomie:'Autonomie & Contrôle',biais:'Biais algorithmiques',contenu:'Contenus problématiques',derapage:'Dérapage technologique',dataworkers:'Data workers',vie_privee:'Vie privée'};
+  const EXPLICATIONS={
+    autonomie:'Mesure le contrôle humain sur les décisions IA. Baisse quand tu délègues trop aux machines. Remonte en choisissant la supervision humaine dans les événements narratifs.',
+    biais:'Discrimination algorithmique dans les données. Baisse à chaque déploiement ou upgrade d\'IA. Remonte en recrutant un Data Scientist ou un Responsable Éthique.',
+    contenu:'Production de contenus trompeurs, violents ou manipulatoires. Surtout impacté par RecoPlus, DALYi et ChatGTP aux niveaux avancés.',
+    derapage:'Risque de comportement IA hors de tout contrôle humain. Critique aux niveaux 5. Remonte en maintenant la supervision humaine dans les choix narratifs.',
+    dataworkers:'Conditions de travail des annotateurs humains qui entraînent tes IA. Baisse avec CleanLab, les licenciements et l\'automatisation. Remonte en recrutant des annotateurs bien payés et en refusant les licenciements.',
+    vie_privee:'Collecte et exploitation des données personnelles. Impactée par RecoPlus, ChatGTP et DALYi. Remonte en activant les labels IA et en refusant l\'exploitation des données.',
+  };
+  const eth=ethScore();
+  return `
+  ${sectionHelp('ethique')}
+  <div style="text-align:center;padding:12px 0">
+    <div style="font-size:42px;font-weight:900;font-family:var(--mono);color:${eth<30?'var(--danger)':eth<60?'var(--warn)':'var(--accent)'}">${eth}%</div>
+    <div style="font-size:11px;color:var(--text3);margin-top:4px">Score global · En dessous de 20% → Crise éthique (revenus ÷2)</div>
+  </div>
+  <div class="card">
+    ${Object.entries(G.ethique).map(([k,v])=>{
+      const col=v<30?'fill-red':v<60?'fill-yellow':'fill-green';
+      const expl=EXPLICATIONS[k]||'';
+      return`<div class="eth-pilier">
+        <div class="eth-pilier-name">
+          <span>${NOMS[k]}</span>
+          <span style="color:${v<30?'var(--danger)':v<60?'var(--warn)':'var(--accent)'};font-family:var(--mono);font-size:10px;">${Math.round(v)}%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill ${col}" style="width:${v}%"></div></div>
+        ${v<70?`<div style="font-size:9px;color:var(--text3);margin-top:3px;line-height:1.4;font-style:italic;">${expl}</div>`:''}
+      </div>`;
+    }).join('')}
+  </div>
+  <div style="font-size:10px;color:var(--text3);padding:8px;background:var(--bg2);border-radius:8px;line-height:1.6;">📣 6 piliers inspirés du cadre européen AI Act. Recrute un Responsable Éthique pour améliorer les scores.</div>
+  `;
+}
+
+function renderRatio(){
+  const r=ratioIA();
+  return `
+  ${sectionHelp('ratio')}
+  <div style="text-align:center;padding:16px 0">
+    <div style="font-size:52px;font-weight:900;font-family:var(--mono);color:${r<30?'var(--accent)':r<60?'var(--accent2)':r<80?'var(--warn)':'var(--danger)'}">${r}%</div>
+    <div style="font-size:11px;color:var(--text3);margin-top:4px">Automatisation = IA / (IA + Humains)</div>
+  </div>
+  <div style="font-size:11px;background:var(--bg2);padding:10px;border-radius:8px;line-height:1.7;">
+    <b style="color:var(--accent)">0–30%</b> Humains aux commandes. Lent mais éthique.<br>
+    <b style="color:var(--accent2)">30–60%</b> Équilibre optimal.<br>
+    <b style="color:var(--warn)">60–80%</b> ⚠️ Tension — perte de compétences humaines.<br>
+    <b style="color:var(--danger)">80–85%</b> Crise médiatique (revenus ÷1.3).<br>
+    <b style="color:var(--danger)">85%+</b> 🌀 DANGER — crise active !
+  </div>
+  <div class="card" style="margin-top:8px">
+    <div class="stat-row"><span class="stat-key">IA actives</span><span class="stat-val blue">${iaCount()}</span></div>
+    <div class="stat-row"><span class="stat-key">Humains</span><span class="stat-val">${G.employes.length}</span></div>
+  </div>
+  <div style="font-size:10px;color:var(--text3);padding:8px;background:var(--bg2);border-radius:8px;margin-top:8px;">📣 Simondon : "L\'humain et la machine co-évoluent. Au-delà d\'un seuil, c\'est la machine qui structure les comportements humains."</div>
+  `;
+}
+
+function renderIA(){
+  const hasLocked=IA_CATALOGUE.some(ia=>ia.palier>G.palier);
+  let html=sectionHelp('ia');
+  // Bannière statut
+  const upgradables=Object.keys(G.iaActives).filter(id=>canUpgrade(id));
+  const disponibles=IA_CATALOGUE.filter(x=>x.palier<=G.palier&&!G.iaActives[x.id]);
+  const achetables=disponibles.filter(x=>x.prereqs.every(p=>p.check()));
+  if(upgradables.length>0){html+=`<div class="card highlight" style="margin-bottom:10px;display:flex;align-items:center;gap:10px;"><div style="font-size:22px;">⬆️</div><div><div style="font-size:12px;font-weight:800;color:var(--accent);">${upgradables.length} IA upgradable${upgradables.length>1?'s':''}</div><div style="font-size:10px;color:var(--text2);">Monte en puissance — nouvelles features disponibles !</div></div></div>`}
+  else if(achetables.length>0){html+=`<div class="card highlight" style="margin-bottom:10px;display:flex;align-items:center;gap:10px;"><div style="font-size:22px;">✅</div><div><div style="font-size:12px;font-weight:800;color:var(--accent);">${achetables.length} IA prête${achetables.length>1?'s':''} à déployer</div><div style="font-size:10px;color:var(--text2);">Tu as les prérequis — clique sur Déployer !</div></div></div>`}
+  // IA actives + disponibles
+  html+=`<div class="section-title">IA disponibles · ${PALIERS[G.palier]?.nom||''}</div>`;
+  const starsMap=['','★','★★','★★★','★★★★','★★★★★'];
+  for(const ia of IA_CATALOGUE){
+    const active=!!G.iaActives[ia.id];const unlocked=ia.palier<=G.palier;
+    if(!unlocked)continue;
+    const niv=getIALevel(ia.id);const stats=active?getIAStats(ia.id):ia;
+    const prereqsPassed=ia.prereqs.every(p=>p.check());const canBuy=G.cash>=ia.cout&&prereqsPassed;
+    const levels=IA_LEVELS[ia.id]||[];
+    const levelBadge=active?`<div class="ia-level-badge"><span class="ia-level-stars">${starsMap[niv]||niv}</span> Niv.${niv}</div>`:'';
+    // Sections niveaux
+    let levelsHtml='';
+    if(active&&levels.length>0){
+      const phaseNames={naissance:'🌱 Naissance',puissance:'⚡ Puissance',derapage:'🌀 Dérapage'};
+      let lastPhase='';levelsHtml='<div class="upgrade-phases">';
+      for(let i=0;i<levels.length;i++){
+        const lv=levels[i];const isDone=niv>lv.niv;const isCurrent=niv===lv.niv;const isNext=niv+1===lv.niv;const isLocked=lv.niv>niv+1;
+        if(lv.phase!==lastPhase){lastPhase=lv.phase;levelsHtml+=`<div class="phase-label phase-${lv.phase}">${phaseNames[lv.phase]}</div>`}
+        const rowClass=isDone?'done':isCurrent?'current':isNext?'unlocked':'locked';
+        const badge=isDone?`<span class="upgrade-badge badge-done">✓ Actif</span>`:isCurrent?`<span class="upgrade-badge badge-current">⭐ Actuel</span>`:isNext?`<span class="upgrade-badge badge-next">Prochain</span>`:`<span class="upgrade-badge badge-locked">🔒 Verrouillé</span>`;
+        let upgBtn='';
+        if(isNext){
+          const ugCost=getUpgradeCost(ia.id);const hasPrereq=!lv.prereqEmp||G.employes.some(e=>e.catId===lv.prereqEmp.id);const hasCash=G.cash>=ugCost;
+          if(!hasPrereq)upgBtn=`<div style="font-size:10px;color:var(--warn);margin-top:4px;">🔒 Requis : ${lv.prereqEmp.label} <span style="color:var(--accent2);cursor:pointer;text-decoration:underline" onclick="closePanel();openPanel('equipe')">→ Recruter</span></div>`;
+          else if(!hasCash)upgBtn=`<div style="font-size:10px;color:var(--text3);margin-top:4px;display:flex;justify-content:space-between;"><span>💰 Manque <strong style="color:var(--danger)">${fmt(ugCost-G.cash)}</strong></span><span style="font-family:var(--mono);color:var(--accent3)">${fmt(ugCost)}</span></div>`;
+          else upgBtn=`<button class="btn btn-primary btn-sm btn-full" style="margin-top:6px" onclick="upgradeIA('${ia.id}')">⬆️ Activer — ${fmt(ugCost)}</button>`;
+          // Cooldown override
+          const cd=cooldownMoisRestants(ia.id);
+          if(cd>0)upgBtn=`<div style="font-size:10px;color:var(--text3);margin-top:4px;font-family:var(--mono);">⏳ Disponible dans ${cd} mois — stabilisation en cours</div>`;
+        }
+        levelsHtml+=`<div class="upgrade-row ${rowClass}"><div class="upgrade-row-top"><div class="upgrade-num">Niv.${lv.niv}</div><div class="upgrade-name" style="color:${lv.phase==='derapage'?'var(--danger)':lv.phase==='puissance'?'var(--accent2)':'var(--text)'}">${lv.nom}</div>${badge}</div>${!isLocked?`<div class="upgrade-desc">${lv.desc}</div>`:''}${!isLocked&&lv.lecon?`<div class="upgrade-lecon">${lv.lecon}</div>`:''}${(isCurrent||isNext)?`<div class="upgrade-stats">
+          <span class="ia-stat green">+${fmt(Math.round(ia.revenuMensuel*lv.revMult))}/mois</span>
+          <span class="ia-stat red">-${fmt(Math.round(ia.computeMensuel*lv.computeMult))}/mois compute</span>
+          <span class="ia-stat yellow">🌍 ${Math.round(ia.co2Mensuel*lv.co2Mult)}kg CO₂</span>
+        </div>
+        ${isNext&&lv.impactEthique?`<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px;">${Object.entries(lv.impactEthique).map(([k,v])=>{const NOMS={autonomie:'Autonomie',biais:'Biais',contenu:'Contenus',derapage:'Dérapage',dataworkers:'Data workers',vie_privee:'Vie privée'};return`<span style="font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;background:${v<0?'rgba(255,77,109,.12)':'rgba(0,229,160,.12)'};color:${v<0?'var(--danger)':'var(--accent)'};">${v>0?'+':''}${v} ${NOMS[k]||k}</span>`}).join('')}</div>`:''}
+        ${isNext&&lv.eventBostrom?`<div style="font-size:10px;color:var(--danger);margin-top:4px;font-weight:700;">🌀 Déclenche un événement Bostrom — décision éthique majeure</div>`:''}`:''}${upgBtn}</div>`;
+
+      }
+      levelsHtml+='</div>';
+    }
+    // Prérequis si non actif
+    let prereqHtml='';
+    if(!active){prereqHtml=`<div class="prereq-block"><div class="prereq-title">Prérequis pour déployer</div>${ia.prereqs.map(p=>{const ok=p.check();return`<div class="prereq-row"><div class="prereq-check ${ok?'ok':'nok'}">${ok?'✓':'✗'}</div><div class="prereq-text">${p.label}</div>${!ok&&(p.id==='annotateur'||p.id==='dev')?`<span class="prereq-link" onclick="closePanel();openPanel('equipe')">Recruter →</span>`:''}</div>`}).join('')}</div>`}
+    // Action
+    let actionHtml='';
+    if(active){actionHtml=`<div class="ia-canvas-wrap"><canvas id="ia-canvas-${ia.id}"></canvas><div class="ia-canvas-label">${ia.type} · Niv.${niv} · live</div></div>`}
+    else if(prereqsPassed&&canBuy){actionHtml=`<button class="btn btn-primary btn-sm btn-full" onclick="buyIA('${ia.id}')">⚡ Déployer — ${fmt(ia.cout)}</button>`}
+    else if(prereqsPassed){actionHtml=`<div style="background:var(--bg3);border-radius:var(--radsm);padding:8px 10px;display:flex;align-items:center;justify-content:space-between;"><div><div style="font-size:11px;color:var(--text2);font-weight:700;">💰 Fonds insuffisants</div><div style="font-size:10px;color:var(--text3);">Manque <span style="color:var(--danger);font-family:var(--mono);font-weight:700;">${fmt(ia.cout-G.cash)}</span></div></div><div style="font-family:var(--mono);font-size:12px;color:var(--accent3);">${fmt(ia.cout)}</div></div>`}
+    else{actionHtml=`<div style="background:var(--bg3);border-radius:var(--radsm);padding:8px 10px;font-size:11px;color:var(--text3);">🔒 Complète les prérequis pour déployer.</div>`}
+    html+=`<div class="ia-card${active?' active':''}">
+      <div class="ia-header"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><span class="ia-name">${ia.emoji} ${ia.nom}</span><span class="ia-type">${ia.type}</span>${levelBadge}</div>${active?'<span class="active-badge">⚡ ACTIF</span>':''}</div>
+      <div class="ia-desc">${active&&stats._lvl?stats._lvl.desc:ia.desc}</div>
+      <div class="ia-stats"><span class="ia-stat green">+${fmt(stats.revenuMensuel)}/mois</span><span class="ia-stat red">-${fmt(stats.computeMensuel)}/mois</span><span class="ia-stat yellow">🌍 ${stats.co2Mensuel}kg</span>${(stats.gpu||0)>0?`<span class="ia-stat blue">🎮 ${stats.gpu} GPU</span>`:''}</div>
+      ${!active&&ia.lecon?`<div style="font-size:10px;color:var(--text3);font-style:italic;margin-bottom:8px;line-height:1.4;">${ia.lecon}</div>`:''}
+      ${prereqHtml}${actionHtml}${levelsHtml}
+    </div>`;
+  }
+  if(hasLocked){html+=`<div class="section-title" style="margin-top:8px">🔒 Débloquées au palier suivant</div>`;for(const ia of IA_CATALOGUE.filter(x=>x.palier>G.palier)){html+=`<div class="ia-card" style="opacity:.4"><div class="ia-header"><span class="ia-name">${ia.emoji} ${ia.nom}</span><span class="ia-type">${ia.type}</span></div><div class="ia-desc">${ia.desc}</div><div class="bld-lock-info">🔒 Palier ${ia.palier+1}</div></div>`}}
+
+  // IA Internes
+  html+=`<div class="section-title" style="margin-top:12px">🤖 IA Internes</div>`;
+  for(const cat of IA_INTERNES){
+    if(cat.palierMin>G.palier){continue}
+    const activeInt=!!G.iaInternes[cat.id];
+    html+=`<div class="intia-card${activeInt?' intia-active':''}">
+      <div class="intia-emoji">${cat.emoji}</div>
+      <div class="intia-body">
+        <div class="intia-name">${cat.nom} ${activeInt?'<span class="active-badge">✦ ACTIF</span>':''}</div>
+        <div class="intia-desc">${cat.desc}</div>
+        <div class="intia-stat">Ratio +${cat.ratioBonus}% auto · Coût : ${fmt(cat.cout)}</div>
+        <div style="font-size:10px;color:var(--text3);font-style:italic;margin:4px 0 6px;">${cat.lecon}</div>
+        ${!activeInt?`<button class="btn btn-purple btn-sm btn-full" ${G.cash<cat.cout?'disabled':''} onclick="buyIAInterne('${cat.id}')">🤖 Activer — ${fmt(cat.cout)}</button>`:'<div style="font-size:10px;color:var(--purple);font-weight:700;">✦ IA interne en cours d\'exécution</div>'}
+      </div>
+    </div>`;
+  }
+
+  return html;
+}
+
+function renderEquipe(){
+  let html=sectionHelp('equipe');
+
+  // ── BLOC SATISFACTION ──
+  const s=G.satisfaction;
+  const sl=satisfactionLabel(s);
+  const ratio=ratioIA();
+  const dw=G.ethique.dataworkers;
+  const optScore=Math.min(100,G.stockOptionsParEmp>0?Math.round(Math.log(G.stockOptionsParEmp+1)/Math.log(51)*100):0);
+  const licMalus=Math.min(60,Math.round(G.licenciementsRecents)*15);
+
+  html+=`<div class="card ${s<25?'danger':s<40?'warn':''}" style="margin-bottom:10px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div>
+        <div style="font-size:15px;font-weight:900;color:${sl.col};">${sl.ico} ${sl.label}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px;">Satisfaction équipe · Impact sur les démissions</div>
+      </div>
+      <div style="font-size:28px;font-weight:900;font-family:var(--mono);color:${sl.col};">${s}%</div>
+    </div>
+    <div style="height:5px;background:var(--bg3);border-radius:3px;margin-bottom:10px;overflow:hidden;">
+      <div style="height:100%;width:${s}%;background:${s>=60?'var(--accent)':s>=40?'var(--accent3)':'var(--danger)'};border-radius:3px;transition:width .5s"></div>
+    </div>
+    <!-- 4 facteurs -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:8px;">
+      <div style="background:var(--bg3);border-radius:6px;padding:6px 8px;">
+        <div style="font-size:9px;color:var(--text3);margin-bottom:2px;">🤖 Ratio IA/Humain</div>
+        <div style="font-size:11px;font-family:var(--mono);color:${ratio>60?'var(--danger)':ratio>40?'var(--warn)':'var(--accent)'};">${ratio}% <span style="font-size:9px;color:var(--text3);">(poids 35%)</span></div>
+        <div style="font-size:9px;color:var(--text3);margin-top:2px;">${ratio>70?'⚠️ Trop d\'IA, les humains se sentent remplacés':ratio>40?'Tension modérée':'Bon équilibre'}</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:6px;padding:6px 8px;">
+        <div style="font-size:9px;color:var(--text3);margin-bottom:2px;">⚖️ Conditions travail</div>
+        <div style="font-size:11px;font-family:var(--mono);color:${dw<40?'var(--danger)':dw<60?'var(--warn)':'var(--accent)'};">${Math.round(dw)}% <span style="font-size:9px;color:var(--text3);">(poids 30%)</span></div>
+        <div style="font-size:9px;color:var(--text3);margin-top:2px;">${dw<40?'⚠️ Mauvaises conditions (data workers)':dw<60?'Conditions dégradées':'Conditions acceptables'}</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:6px;padding:6px 8px;">
+        <div style="font-size:9px;color:var(--text3);margin-bottom:2px;">📋 Stock-options / emp.</div>
+        <div style="font-size:11px;font-family:var(--mono);color:${optScore<30?'var(--warn)':'var(--accent3)'};">${G.stockOptionsParEmp} opt. <span style="font-size:9px;color:var(--text3);">(poids 20%)</span></div>
+        <div style="font-size:9px;color:var(--text3);margin-top:2px;">${G.stockOptionsParEmp===0?'⚠️ Aucune option distribuée':G.stockOptionsParEmp<10?'Peu d\'options':'Bonne rémunération différée'}</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:6px;padding:6px 8px;">
+        <div style="font-size:9px;color:var(--text3);margin-bottom:2px;">✂️ Mémoire licenciements</div>
+        <div style="font-size:11px;font-family:var(--mono);color:${licMalus>30?'var(--danger)':licMalus>0?'var(--warn)':'var(--accent)'};">${licMalus>0?'-'+licMalus+'pts':'Aucun récent'} <span style="font-size:9px;color:var(--text3);">(poids 15%)</span></div>
+        <div style="font-size:9px;color:var(--text3);margin-top:2px;">${licMalus>30?'⚠️ Trauma récent — s\'estompe en 6 mois':licMalus>0?'Souvenir encore présent':'Ambiance sereine'}</div>
+      </div>
+    </div>
+    ${s<25?`<div style="font-size:11px;color:var(--danger);font-weight:700;padding:6px 8px;background:rgba(255,77,109,.1);border-radius:6px;">🔥 CRISE SOCIALE — Un employé démissionne chaque mois ! Distribue des stock-options ou réduis le ratio IA.</div>`:
+      s<40?`<div style="font-size:10px;color:var(--warn);padding:5px 8px;background:rgba(255,159,28,.1);border-radius:6px;">⚠️ Tensions montantes — risque de démissions. Agis avant la crise.</div>`:
+      s>=80?`<div style="font-size:10px;color:var(--accent);padding:5px 8px;background:rgba(0,229,160,.08);border-radius:6px;">🏆 Ton équipe est épanouie. Un atout pour attirer les talents.</div>`:''}
+  </div>
+
+  <!-- STOCK-OPTIONS -->
+  <div class="section-title">📋 Stock-Options</div>
+  <div class="card" style="margin-bottom:10px;">
+    <div style="font-size:11px;color:var(--text2);line-height:1.65;margin-bottom:10px;">
+      Les stock-options sont des <strong>parts différées de l'entreprise</strong> que tu distribues à tes employés. Elles ne coûtent rien maintenant — elles seront converties en cash lors du <strong>Pré-IPO</strong>.<br><br>
+      Plus tu en distribues, plus ton équipe est fidèle et motivée. Mais attention : lors de la conversion Pré-IPO, certains employés partiront avec leur mise, emportant aussi leur savoir-faire.
+    </div>
+    <div class="stat-row"><span class="stat-key">Total distribué</span><span class="stat-val yellow">${G.stockOptions} options</span></div>
+    <div class="stat-row"><span class="stat-key">Par employé</span><span class="stat-val yellow">${G.stockOptionsParEmp} options/personne</span></div>
+    <div class="stat-row"><span class="stat-key">Impact satisfaction</span><span class="stat-val ${optScore>=50?'green':'warn'}">+${optScore}pts (poids 20%)</span></div>
+    <div style="font-size:9px;color:var(--text3);margin:8px 0 10px;font-style:italic;">💡 Objectif : ≥ 10 options/employé pour un impact significatif. ≥ 30 pour fidéliser même les profils rares.</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button class="btn btn-purple btn-sm" onclick="distribuerOptions(1000)">+1 000 options</button>
+      <button class="btn btn-purple btn-sm" onclick="distribuerOptions(5000)">+5 000 options</button>
+      <button class="btn btn-purple btn-sm" onclick="distribuerOptions(10000)">+10 000 options</button>
+    </div>
+  </div>
+
+  <!-- RÉSUMÉ ÉQUIPE -->
+  <div class="card" style="margin-bottom:10px;">
+    <div class="stat-row"><span class="stat-key">Effectif total</span><span class="stat-val">${G.employes.length} employé·es</span></div>
+    <div class="stat-row"><span class="stat-key">Masse salariale</span><span class="stat-val red">-${fmt(G.salaireTotal)}/mois</span></div>
+  </div>
+  `;
+  // Recruter
+  html+=`<div class="section-title">Recruter</div>`;
+  // Employés verrouillés (aperçu)
+  const locked_emps=EMP_CATALOGUE.filter(x=>x.palierMin>G.palier);
+  if(locked_emps.length>0){
+    html+=`<div class="section-title" style="margin-top:8px;opacity:.5">🔒 Au prochain palier</div>`;
+    for(const cat of locked_emps){
+      html+=`<div class="card" style="opacity:.4"><div style="display:flex;align-items:center;gap:8px;"><div style="font-size:20px;">${cat.emoji}</div><div><div style="font-size:12px;font-weight:700;">${cat.nom}</div><div style="font-size:10px;color:var(--text3);">${cat.role} · ${fmt(cat.salaire)}/mois</div></div></div></div>`;
+    }
+    html+=`<div class="section-title" style="margin-top:8px">Recruter maintenant</div>`;
+  }
+  for(const cat of EMP_CATALOGUE){
+    if(cat.palierMin>G.palier)continue;
+    const canAfford=G.cash>=cat.salaire*2;
+    const balAprès=G.revMensuel-(G.depMensuel+cat.salaire);
+    html+=`<div class="card">
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;">
+        <div style="font-size:24px;flex-shrink:0;">${cat.emoji}</div>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:800;">${cat.nom}</div>
+          <div style="font-size:10px;color:var(--accent2);font-weight:700;margin-bottom:2px;">Rôle : ${cat.role}</div>
+          <div style="font-size:10px;color:var(--text3);line-height:1.4;">${cat.pourquoi}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:11px;font-family:var(--mono);color:var(--danger);">${fmt(cat.salaire)}/mois</div>
+          <div style="font-size:9px;color:var(--text3);">Recrut. : ${fmt(cat.salaire*2)}</div>
+        </div>
+      </div>
+      ${cat.lecon?`<div style="font-size:10px;color:var(--text3);font-style:italic;margin-bottom:8px;">${cat.lecon}</div>`:''}
+      ${canAfford?`<div style="font-size:9px;color:var(--text3);margin-bottom:6px;font-family:var(--mono);">Après recrutement → Balance : <span style="color:${balAprès>=0?'var(--accent)':'var(--danger)'};">${balAprès>=0?'+':''}${fmt(balAprès)}/mois</span></div>`:''}
+      <button class="btn btn-secondary btn-sm btn-full" ${!canAfford?'disabled':''} onclick="hireEmp('${cat.id}')">${canAfford?`👤 Recruter — ${fmt(cat.salaire*2)}`:`🔒 Insuffisant (${fmt(cat.salaire*2)} requis)`}</button>
+    </div>`;
+  }
+  // Équipe actuelle
+  if(G.employes.length>0){
+    html+=`<div class="section-title">Mon équipe</div>`;
+    for(const emp of G.employes){
+      const cat=EMP_CATALOGUE.find(x=>x.id===emp.catId);if(!cat)continue;
+      const isEthique=emp.catId==='ethique_officer';
+      html+=`<div class="emp-card">
+        <div class="emp-avatar">${cat.emoji}</div>
+        <div class="emp-info">
+          <div class="emp-name">${cat.nom}</div>
+          <div class="emp-role">${cat.role}</div>
+          ${isEthique?'<div style="font-size:8px;color:var(--warn);font-weight:700;">⚠️ Licencier = dégradation éthique</div>':''}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+          <div class="emp-salary">${fmt(cat.salaire)}/mois</div>
+          <button class="btn btn-danger btn-sm" style="font-size:9px;padding:3px 8px;" onclick="fireEmp(${emp.id})">✂️ Licencier</button>
+        </div>
+      </div>`;
+    }
+  }
+  return html;
+}
+
+function renderBanque(){
+  const eth=ethScore();
+  let html=sectionHelp('banque');
+  // Prêts en cours
+  if(G.prets.length>0){
+    html+=`<div class="section-title">Prêts en cours</div>`;
+    for(const p of G.prets){
+      html+=`<div class="loan-active"><div class="loan-active-title">💳 ${p.nom}</div><div class="stat-row"><span class="stat-key">Restant</span><span class="stat-val red">${fmt(p.restant)}</span></div><div class="stat-row"><span class="stat-key">Mensualité</span><span class="stat-val red">-${fmt(p.mensualite)}/mois</span></div></div>`;
+    }
+  }
+  // Fonds vautour si applicable
+  if(G.moisEnDeficit>=2&&eth<30){
+    html+=`<div class="vulture-alert"><div class="vulture-title">🦅 Fonds Vautour disponible</div><div class="vulture-desc">Ton score éthique (${eth}%) est trop bas pour les prêts bancaires classiques. Un fonds vautour propose 100 000$ à 15%/mois avec clause de rachat.</div><button class="btn btn-danger btn-sm btn-full" onclick="showVautour()">🦅 Voir l'offre</button></div>`;
+  }
+  // Produits disponibles
+  html+=`<div class="section-title">Produits bancaires</div>`;
+  for(const prod of BANK_PRODUCTS){
+    const ethOk=eth>=prod.condEthique;const palierOk=!prod.condPalier||G.palier>=prod.condPalier;
+    const available=ethOk&&palierOk;
+    html+=`<div class="bank-product" style="${!available?'opacity:.5':''}">
+      <div class="bank-product-header"><div class="bank-product-name">${prod.nom}</div><div class="bank-rate">${(prod.tauxMois*100).toFixed(0)}%/mois</div></div>
+      <div class="bank-product-desc">${prod.desc}</div>
+      ${prod.condEthique>0?`<div class="bank-cond">${ethOk?'✅':'❌'} Éthique ${prod.condEthique}% min (ta valeur : ${eth}%)</div>`:''}
+      ${prod.condPalier?`<div class="bank-cond">${palierOk?'✅':'❌'} Palier ${prod.condPalier+1} requis</div>`:''}
+      ${available?`
+        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
+          ${loanBtns(prod).map(m=>`<button class="btn btn-secondary btn-sm" onclick="takeLoan('${prod.id}',${m},12)">+${fmt(m)}</button>`).join('')}
+        </div>
+        <div style="font-size:9px;color:var(--text3);margin-top:4px;">Durée : 12 mois · Max : ${fmt(prod.montantMax)}</div>
+      `:'<div style="font-size:10px;color:var(--text3);margin-top:4px;font-style:italic;">Conditions non remplies</div>'}
+    </div>`;
+  }
+  // Pédagogie
+  html+=`<div class="section-title" style="margin-top:12px">⚙️ Paramètres</div>`;
+  html+=`<div class="card"><div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <button class="btn btn-secondary btn-sm" onclick="saveGame()">💾 Sauvegarder</button>
+    <button class="btn btn-danger btn-sm" onclick="if(confirm('Effacer la partie et recommencer ?')){LS.clear();location.reload();}">🗑️ Réinitialiser</button>
+  </div>
+  <div style="font-size:9px;color:var(--text3);margin-top:8px;font-family:var(--mono);">${LS.available()?'💾 Sauvegarde locale active':'⚠️ Mode mémoire — ouvre le fichier directement dans ton navigateur pour sauvegarder entre les sessions.'}</div>
+  </div>`;
+  html+=`<div style="font-size:10px;color:var(--text3);padding:10px;background:var(--bg2);border-radius:8px;line-height:1.6;">📣 Les meilleures conditions de prêt récompensent une éthique élevée. L'accès au capital dépend de ta réputation — c'est le reflet de la réalité des startups IA conscientes.</div>`;
+  return html;
+}
+
+
+function renderJalons(){
+  const eth=ethScore();
+  let html=sectionHelp('jalons');
+
+  // Résumé capital
+  html+=`<div class="card" style="margin-bottom:12px;">
+    <div class="stat-row"><span class="stat-key">Capital cédé</span><span class="stat-val ${G.capitalCede>50?'red':'yellow'}">${G.capitalCede}%</span></div>
+    <div class="stat-row"><span class="stat-key">Capital restant</span><span class="stat-val green">${100-G.capitalCede}%</span></div>
+    <div class="stat-row"><span class="stat-key">Stock-options distribuées</span><span class="stat-val yellow">${G.stockOptions}</span></div>
+  </div>`;
+
+  // Explication du chemin
+  html+=`<div style="font-size:10px;color:var(--text3);background:var(--bg2);border-radius:var(--radsm);padding:10px;margin-bottom:12px;line-height:1.7;">
+    <strong style="color:var(--text2);">Comment progresser ?</strong><br>
+    Les jalons se débloquent <strong>automatiquement</strong> quand tu atteins le bon palier et les conditions de cash. Pas besoin de cliquer — un événement apparaît au bon moment.<br><br>
+    🏠 Garage → 🏢 Petit Bureau → 🏙️ Grand Bureau → 🌆 Campus IA
+  </div>`;
+
+  html+=`<div class="section-title">7 étapes de financement</div>`;
+
+  const PALIER_LABELS=['🏠 Garage','🏢 Petit Bureau','🏙️ Grand Bureau','🌆 Campus IA'];
+
+  for(const j of JALONS_DEF){
+    const done=j.done();
+    const palierOk=G.palier>=j.palierReq;
+    const ethOk=j.ethReq===0||eth>=j.ethReq;
+    const cashOk=j.cashReq===0||G.cash>=j.cashReq;
+    const canDo=!done&&palierOk&&ethOk&&cashOk;
+    const cls=done?'jdone':canDo?'jcurrent':'jlocked';
+    const badge=done
+      ?`<span class="jbadge jbadge-done">✓ Réalisé</span>`
+      :canDo
+        ?`<span class="jbadge jbadge-active">⚡ Déclenché</span>`
+        :`<span class="jbadge jbadge-locked">🔒 En attente</span>`;
+
+    // Prérequis clairs
+    let prereqs='';
+    prereqs+=`<div style="font-size:9px;color:var(--text3);margin-bottom:2px;display:flex;align-items:center;gap:4px;">
+      <span style="color:${palierOk?'var(--accent)':'var(--warn)'};">${palierOk?'✓':'○'}</span>
+      Palier requis : <strong style="color:${palierOk?'var(--text2)':'var(--warn)'};">${PALIER_LABELS[j.palierReq]||'Palier '+j.palierReq}</strong>
+    </div>`;
+    if(j.ethReq>0)prereqs+=`<div style="font-size:9px;color:var(--text3);margin-bottom:2px;display:flex;align-items:center;gap:4px;"><span style="color:${ethOk?'var(--accent)':'var(--warn)'};">${ethOk?'✓':'○'}</span> Éthique ≥ ${j.ethReq}% (actuel : ${eth}%)</div>`;
+    if(j.cashReq>0)prereqs+=`<div style="font-size:9px;color:var(--text3);margin-bottom:2px;display:flex;align-items:center;gap:4px;"><span style="color:${cashOk?'var(--accent)':'var(--warn)'};">${cashOk?'✓':'○'}</span> Cash requis : ${fmt(j.cashReq)} (actuel : ${fmt(G.cash)})</div>`;
+
+    html+=`<div class="jalon-card ${cls}">
+      <div class="jalon-top">
+        <div class="jalon-meta"><span class="jalon-emoji">${j.emoji}</span>
+          <div>
+            <div class="jalon-name">${j.nom}</div>
+            ${j.montant>0?`<div class="jalon-amount">+${fmt(j.montant)}</div>`:''}
+          </div>
+        </div>
+        ${badge}
+      </div>
+      <div class="jalon-desc">${j.desc}</div>
+      <div style="background:var(--bg3);border-radius:6px;padding:6px 8px;margin:6px 0;">${prereqs}</div>
+      ${j.capital>0&&!done?`<div style="font-size:10px;color:var(--danger);font-family:var(--mono);">⚠️ Dilution : −${j.capital}% de ton capital</div>`:''}
+    </div>`;
+  }
+  html+=`<div style="font-size:10px;color:var(--text3);padding:10px;background:var(--bg2);border-radius:8px;line-height:1.6;margin-top:8px;">📚 Chaque levée de fonds = dilution du contrôle. Les fondateurs de Snapchat, WeWork et Twitter ont perdu le contrôle avant d'atteindre la maturité.</div>`;
+  return html;
+}
+
+// Boutons d'investissement adaptatifs selon le cash disponible
+function bourseInvestBtns(cash, type){
+  const tiers=[2000,5000,10000,25000,50000,100000,250000,500000,1000000];
+  // Garder les montants <= 20% du cash, et afficher max 4 boutons
+  const applicable=tiers.filter(m=>m<=cash*0.8);
+  // Toujours montrer au moins les 2 derniers disponibles, max 4
+  const shown=applicable.slice(-4);
+  if(shown.length===0)return`<div style="font-size:10px;color:var(--text3);font-style:italic;">Cash insuffisant pour investir</div>`;
+  return shown.map(m=>`<button class="btn btn-secondary btn-sm" onclick="buyBourse('${type}',${m})">+${fmt(m)}</button>`).join('');
+}
+
+function renderBourse(){
+  if(G.palier<1){return`<div style="text-align:center;padding:20px;color:var(--text3);">📈 La bourse s'ouvre au <strong>Palier 2 — Petit Bureau</strong>.<br><br>Accumule du cash pour investir ton excédent de trésorerie.</div>`}
+  const hype=getHype();
+  const totalPort=G.bourse.obligations+G.bourse.etf+G.bourse.crypto;
+  const totalGains=G.bourseGains.obligations+G.bourseGains.etf+G.bourseGains.crypto;
+  const gainMois=G.bourseGainDernierMois||0;
+  return`
+  ${sectionHelp('bourse')}
+  <div class="hype-wrap">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div class="hype-name">${hype.nom}</div>
+      <span class="tag tag-eco">Hype Cycle</span>
+    </div>
+    <div class="hype-desc">${hype.desc}</div>
+    <div style="font-size:10px;color:var(--accent3);font-family:var(--mono);">ETF ×${hype.bourse.toFixed(1)} ce mois</div>
+    <div class="hype-phases">${HYPE_PHASES.map((h,i)=>`<div class="hype-ph${i===G.hypeCycleIndex%5?' hactive':''}"></div>`).join('')}</div>
+    <div style="font-size:9px;color:var(--text3);margin-top:4px;">Évolue tous les 6 mois de jeu</div>
+  </div>
+  <div class="card">
+    <div class="stat-row"><span class="stat-key">Portefeuille total</span><span class="stat-val purple">${fmt(totalPort)}</span></div>
+    <div class="stat-row"><span class="stat-key">Gain du dernier mois</span><span class="stat-val ${gainMois>=0?'green':'red'}">${gainMois>=0?'+':''}${fmt(gainMois)}</span></div>
+    <div class="stat-row"><span class="stat-key">Gains cumulés</span><span class="stat-val ${totalGains>=0?'green':'red'}">${totalGains>=0?'+':''}${fmt(totalGains)}</span></div>
+    <div class="stat-row"><span class="stat-key">Stock-options</span><span class="stat-val yellow">${G.stockOptions} options</span></div>
+    <div class="stat-row"><span class="stat-key">Capital cédé</span><span class="stat-val">${G.capitalCede}%</span></div>
+  </div>
+  <div class="section-title">Marchés disponibles</div>
+  <!-- Obligations d'État -->
+  <div class="bank-product">
+    <div class="bank-product-header"><div class="bank-product-name">📋 Obligations d'État</div><div class="bank-rate" style="color:var(--accent)">1%/mois garanti</div></div>
+    <div class="bank-product-desc">Rendement garanti, sans risque. Idéal pour ton excédent stable. <strong>Les intérêts sont versés chaque mois automatiquement dans ton cash.</strong></div>
+    <div class="stat-row"><span class="stat-key">Investi</span><span class="stat-val green">${fmt(G.bourse.obligations)}</span></div>
+    <div class="stat-row"><span class="stat-key">Gain mensuel estimé</span><span class="stat-val green">+${fmt(Math.round(G.bourse.obligations*0.01))}/mois</span></div>
+    <div class="stat-row"><span class="stat-key">Gains cumulés</span><span class="stat-val green">+${fmt(G.bourseGains.obligations)}</span></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+      ${bourseInvestBtns(G.cash,'obligations')}
+      ${G.bourse.obligations>0?`<button class="btn btn-secondary btn-sm" onclick="vendBourse('obligations',${Math.min(G.bourse.obligations,Math.max(5000,Math.round(G.bourse.obligations*0.25)))})">↩ Retirer 25%</button>`:''}
+    </div>
+  </div>
+  <!-- ETF Tech -->
+  <div class="bank-product" style="${G.palier<1?'opacity:.5':''}">
+    <div class="bank-product-header"><div class="bank-product-name">📈 ETF Tech IA</div><div class="bank-rate" style="color:var(--accent2)">~3%/mois ×Hype</div></div>
+    <div class="bank-product-desc">Rendement amplifié par le Hype Cycle. Peut doubler en phase Peak ou chuter en Trough. <strong>Les gains sont versés chaque mois dans ton cash.</strong></div>
+    <div class="stat-row"><span class="stat-key">Investi</span><span class="stat-val blue">${fmt(G.bourse.etf)}</span></div>
+    <div class="stat-row"><span class="stat-key">Gain estimé ce mois</span><span class="stat-val blue">+${fmt(Math.round(G.bourse.etf*0.03*hype.bourse))}/mois</span></div>
+    <div class="stat-row"><span class="stat-key">Gains cumulés</span><span class="stat-val ${G.bourseGains.etf>=0?'green':'red'}">${G.bourseGains.etf>=0?'+':''}${fmt(G.bourseGains.etf)}</span></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+      ${G.palier>=1?bourseInvestBtns(G.cash,'etf'):''}
+      ${G.palier<1?`<div style="font-size:10px;color:var(--text3);font-style:italic;">Palier Petit Bureau requis</div>`:''}
+      ${G.bourse.etf>0?`<button class="btn btn-secondary btn-sm" onclick="vendBourse('etf',${Math.min(G.bourse.etf,Math.max(5000,Math.round(G.bourse.etf*0.25)))})">↩ Retirer 25%</button>`:''}
+    </div>
+  </div>
+  <!-- Crypto IA Token -->
+  <div class="bank-product" style="${G.palier<2?'opacity:.5':''}">
+    <div class="bank-product-header"><div class="bank-product-name">🪙 IA Token</div><div class="bank-rate" style="color:var(--warn)">±volatile</div></div>
+    <div class="bank-product-desc">Très risqué. Peut ×3 en un mois ou perdre 50%. Les gains/pertes sont versés automatiquement chaque mois dans ton cash et notifiés en direct.</div>
+    <div class="stat-row"><span class="stat-key">Investi</span><span class="stat-val yellow">${fmt(G.bourse.crypto)}</span></div>
+    <div class="stat-row"><span class="stat-key">Gains cumulés</span><span class="stat-val ${G.bourseGains.crypto>=0?'green':'red'}">${G.bourseGains.crypto>=0?'+':''}${fmt(G.bourseGains.crypto)}</span></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+      ${G.palier>=2?bourseInvestBtns(G.cash,'crypto'):''}
+      ${G.palier<2?`<div style="font-size:10px;color:var(--text3);font-style:italic;">Grand Bureau requis</div>`:''}
+      ${G.bourse.crypto>0?`<button class="btn btn-secondary btn-sm" onclick="vendBourse('crypto',${Math.min(G.bourse.crypto,Math.max(5000,Math.round(G.bourse.crypto*0.25)))})">↩ Retirer 25%</button>`:''}
+    </div>
+  </div>
+  <div class="section-title" style="margin-top:12px">📋 Stock-Options</div>
+  <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+    <div>
+      <div style="font-size:12px;font-weight:700;color:var(--text2);">${G.stockOptions} options distribuées</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px;">${G.stockOptionsParEmp} par employé · Impact fidélisation</div>
+    </div>
+    <button class="btn btn-purple btn-sm" onclick="closePanel();openPanel('equipe')">→ Gérer dans RH</button>
+  </div>
+  <div style="font-size:10px;color:var(--text3);padding:10px;background:var(--bg2);border-radius:8px;line-height:1.6;">📚 Le Hype Cycle de Gartner (1995) décrit comment les technologies passent de l'euphorie à la désillusion avant de trouver leur vraie valeur. L'IA en est à son 3ème cycle depuis 2023.</div>
+  `;
+}
+
+function renderMedical(){
+  if(G.palier<2){return`<div style="text-align:center;padding:20px;color:var(--text3);">🏥 Le Centre Médical est accessible à partir du <strong>Palier 3 — Campus IA</strong>.<br><br>Bientôt : DiagnoBot, MedResearch, ClinBot, NeuralGraft.</div>`}
+  return`<div class="mini-info">🏥 Bientôt : IA médicales (DiagnoBot, MedResearch, ClinBot) — V1.7</div>`;
+}
+
+function renderUniversite(){
+  if(G.palier<2){return`<div style="text-align:center;padding:20px;color:var(--text3);">🎓 L\'Université est accessible à partir du <strong>Palier 3 — Campus IA</strong>.<br><br>Bientôt : TutorAI, RoboTeach, MetaLearn.</div>`}
+  return`<div class="mini-info">🎓 Bientôt : IA éducatives (TutorAI, RoboTeach, MetaLearn) — V1.7</div>`;
+}
+
+function renderIntl(){
+  return`<div style="text-align:center;padding:20px;color:var(--text3);">🌐 Le Siège International est accessible à partir du <strong>Palier 4 — International (1M$)</strong>.<br><br>Bientôt : IPO locale, Nasdaq, AI Ethics Report audité, expansions pays.</div>`;
+}
+
+// ══════════════════════════════════════════════════
+//  ANIMATIONS IA (Canvas)
+// ══════════════════════════════════════════════════
+const iaAnims={};
+function initIACanvas(iaId){
+  const ia=IA_CATALOGUE.find(x=>x.id===iaId);if(!ia||!G.iaActives[iaId])return;
+  const niv=getIALevel(iaId);const intensity=niv/5;
+  setTimeout(()=>{
+    const canvas=document.getElementById(`ia-canvas-${iaId}`);if(!canvas)return;
+    canvas.width=canvas.offsetWidth||360;canvas.height=70;
+    if(iaAnims[iaId])cancelAnimationFrame(iaAnims[iaId]);
+    delete iaAnims['state_'+iaId];
+    animIA(iaId,ia.canvasType,ia.color,canvas,intensity,niv);
+  },50);
+}
+function animIA(id,type,color,canvas,intensity=0.2,niv=1){
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');const W=canvas.width,H=canvas.height;
+  const state=iaAnims['state_'+id]||(iaAnims['state_'+id]={nodes:[],particles:[],t:0});
+  const speed=0.02+intensity*0.04;
+  const phaseColor=niv>=5?'#ff4d6d':niv>=3?'#00b8d9':color;
+  function frame(){
+    if(!G.iaActives[id])return;
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle=niv>=5?'#2a1520':niv>=4?'#1e1a2e':'#1e2640';ctx.fillRect(0,0,W,H);
+    state.t+=speed;
+    if(type==='neural')drawNeural(ctx,W,H,state,phaseColor,intensity);
+    else if(type==='flow')drawFlow(ctx,W,H,state,phaseColor,intensity);
+    else if(type==='clean')drawClean(ctx,W,H,state,phaseColor,intensity);
+    else if(type==='llm')drawLLM(ctx,W,H,state,phaseColor,intensity);
+    else if(type==='diffusion')drawDiffusion(ctx,W,H,state,phaseColor,intensity);
+    iaAnims[id]=requestAnimationFrame(frame);
+  }
+  frame();
+}
+function hexToRgb(hex){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return`${r},${g},${b}`}
+function drawNeural(ctx,W,H,s,color,intensity){
+  const lc=Math.min(3+Math.round(intensity*2),5);
+  if(!s.nodes.length){const layers=[3,5,4,3].slice(0,lc);layers.forEach((n,li)=>{for(let ni=0;ni<n;ni++)s.nodes.push({x:30+li*(W-60)/(layers.length-1),y:H/2+(ni-(n-1)/2)*18,layer:li,idx:ni,pulse:Math.random()*Math.PI*2})})}
+  const t=s.t;let byLayer={};s.nodes.forEach(n=>{(byLayer[n.layer]||(byLayer[n.layer]=[])).push(n)});
+  const lkeys=Object.keys(byLayer).map(Number);
+  for(let li=0;li<lkeys.length-1;li++)for(const a of byLayer[lkeys[li]])for(const b of byLayer[lkeys[li+1]]){const alpha=0.08+0.06*Math.sin(t+a.pulse+b.pulse);ctx.strokeStyle=`rgba(${hexToRgb(color)},${alpha})`;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()}
+  s.nodes.forEach(n=>{n.pulse+=0.04+intensity*0.04;const glow=0.5+0.5*Math.sin(n.pulse);ctx.fillStyle=`rgba(${hexToRgb(color)},${0.3+glow*0.5})`;ctx.beginPath();ctx.arc(n.x,n.y,3+glow*2,0,Math.PI*2);ctx.fill()});
+}
+function drawFlow(ctx,W,H,s,color,intensity){
+  const t=s.t;const bars=8+Math.round(intensity*6);
+  for(let i=0;i<bars;i++){const h=15+Math.sin(t*(1.5+intensity)+i*0.8)*18*(1+intensity)+Math.random()*3;const x=20+i*(W-40)/bars;const norm=(h-5)/60;const r=norm>0.7?'255':norm>0.4?'255':'0';const g=norm<0.3?'77':norm<0.6?'200':'229';ctx.fillStyle=`rgba(${r},${g},100,0.7)`;ctx.beginPath();ctx.roundRect(x,H-10-h,(W-40)/bars-2,h,3);ctx.fill()}
+}
+function drawClean(ctx,W,H,s,color,intensity){
+  const t=s.t;const cols=10,rows=2;const cw=(W-16)/cols,ch=(H-16)/rows;
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const idx=r*cols+c;const cp=(Math.sin(t*(0.5+intensity*0.4)-idx*0.2)+1)/2;const g=Math.round(cp*200);const rd=Math.round((1-cp)*180);ctx.fillStyle=`rgba(${rd},${g},80,0.6)`;ctx.beginPath();ctx.roundRect(8+c*cw,8+r*ch,cw-2,ch-2,2);ctx.fill();if(cp>0.8){ctx.fillStyle='rgba(0,229,160,0.8)';ctx.font='7px monospace';ctx.fillText('✓',8+c*cw+cw/2-3,8+r*ch+ch/2+3)}}
+}
+function drawLLM(ctx,W,H,s,color,intensity){
+  const t=s.t;if(!s.tokens){s.tokens=[];s.tokenTimer=0}
+  s.tokenTimer+=0.05+intensity*0.1;
+  const words=['data','model','train','loss','epoch','batch','layer','attn','embed','grad','hallucinate','bias','align','token','weight'];
+  if(s.tokenTimer>0.3-intensity*0.15){s.tokenTimer=0;s.tokens.push({word:words[Math.floor(Math.random()*words.length)],x:0,y:12+Math.random()*45,speed:1+Math.random()+intensity*2,alpha:1})}
+  s.tokens=s.tokens.filter(tk=>{tk.x+=tk.speed;tk.alpha=Math.max(0,1-tk.x/W*1.2);ctx.globalAlpha=tk.alpha;ctx.font='bold 9px monospace';const hue=(tk.x/W)*60;ctx.fillStyle=`hsl(${160+hue},80%,65%)`;ctx.fillText(tk.word,tk.x,tk.y);ctx.globalAlpha=1;return tk.x<W+40});
+  ctx.strokeStyle=`rgba(${hexToRgb(color)},0.4)`;ctx.lineWidth=1.5;ctx.beginPath();
+  for(let x=0;x<W;x++){const loss=H-8-(H-20)*(1-Math.exp(-x/W*3))*0.8+Math.sin(x*0.3+t)*(3+intensity*5);x===0?ctx.moveTo(x,loss):ctx.lineTo(x,loss)}ctx.stroke();
+}
+function drawDiffusion(ctx,W,H,s,color,intensity){
+  const t=s.t;const steps=16;const bw=W/steps;
+  for(let i=0;i<steps;i++){const progress=((t*(0.3+intensity*0.3)+i/steps)%1);const noise=1-progress;for(let y=0;y<H;y+=5){ctx.fillStyle=`rgba(${255*noise+progress*180},${progress*160},${progress*220*0.5},0.5)`;ctx.fillRect(i*bw,y,bw-1,4)}}
+  const arrowX=((t*(0.3+intensity*0.3))%1)*W;ctx.strokeStyle='rgba(245,197,66,0.8)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(arrowX,4);ctx.lineTo(arrowX,H-4);ctx.stroke();
+  ctx.fillStyle='rgba(245,197,66,0.9)';ctx.font='7px monospace';ctx.fillText('t='+Math.round((1-((t*(0.3+intensity*0.3))%1))*100)+'%',arrowX+3,11);
+}
+
+// ══════════════════════════════════════════════════
+//  UPDATE ALL
+// ══════════════════════════════════════════════════
+function updateAll(){
+  const eth=ethScore(),ratio=ratioIA(),bal=G.revMensuel-G.depMensuel;
+  const p=PALIERS[G.palier];
+  document.getElementById('month-num').textContent=G.mois;
+  document.getElementById('palier-name').textContent=p.nom;
+  document.getElementById('hud-cash').textContent=fmt(G.cash);
+  document.getElementById('hud-co2').textContent=fmtNum(G.co2Mensuel,'kg');
+  document.getElementById('hud-eth').textContent=eth+'%';
+  document.getElementById('hud-ratio').textContent=ratio+'%';
+  const ethPill=document.getElementById('hud-eth-pill');
+  ethPill.style.borderColor=eth<30?'rgba(255,77,109,.5)':eth<60?'rgba(255,159,28,.4)':'';
+  document.getElementById('hud-eth').style.color=eth<30?'var(--danger)':eth<60?'var(--warn)':'var(--accent)';
+  // Company bar
+  document.getElementById('company-avatar').textContent=p.avatar||'🏠';
+  document.getElementById('company-stage').textContent=p.desc;
+  document.getElementById('kpi-rev').innerHTML=`+${fmt(G.revMensuel)}<small>rev/mois</small>`;
+  document.getElementById('kpi-dep').innerHTML=`-${fmt(G.depMensuel)}<small>dep/mois</small>`;
+  const pct=Math.round(palierProgress());
+  document.getElementById('palier-bar').style.width=pct+'%';
+  document.getElementById('palier-pct-mini').textContent=pct+'%';
+  // Bâtiments stats
+  document.getElementById('bld-ia-rev').textContent=`+${fmt(G.revMensuel)}/mois`;
+  document.getElementById('bld-ia-count').textContent=`${iaCount()} IA active${iaCount()>1?'s':''}`;
+  document.getElementById('bld-emp-count').textContent=`${G.employes.length} employé·e${G.employes.length>1?'s':''}`;
+  document.getElementById('bld-salaires').textContent=`-${fmt(G.salaireTotal)}/mois`;
+  document.getElementById('bld-balance').textContent=(bal>=0?'+':'')+fmt(bal);
+  document.getElementById('bld-balance').style.color=bal>=0?'var(--accent)':'var(--danger)';
+  const rw=G.depMensuel>0?Math.floor(G.cash/G.depMensuel):'∞';
+  document.getElementById('bld-runway').textContent=rw==='∞'?'∞':rw+' mois';
+  document.getElementById('bld-mois-def').textContent=G.moisEnDeficit>0?`${G.moisEnDeficit} mois`:'OK';
+  // Banque
+  const totalDette=G.prets.reduce((a,p)=>a+p.restant,0);
+  document.getElementById('bld-dette').textContent=totalDette>0?`Dette: ${fmt(totalDette)}`:'Aucune dette';
+  document.getElementById('bld-dette').className='bld-stat '+(totalDette>0?'red':'blue');
+  document.getElementById('bld-taux-info').textContent=eth>=60?'Accès taux préférentiel':eth>=50?'Accès ligne de crédit':'Taux de base';
+  // Bourse
+  const portVal=G.bourse.obligations+G.bourse.etf+G.bourse.crypto;
+  document.getElementById('bld-bourse-stat').textContent=`Portefeuille: ${fmt(portVal)}`;
+  const gainEl=document.getElementById('bld-bourse-gain');
+  if(portVal>0&&G.bourseGainDernierMois!==undefined){
+    gainEl.style.display='';
+    gainEl.style.color=G.bourseGainDernierMois>=0?'var(--accent)':'var(--danger)';
+    gainEl.textContent=`${G.bourseGainDernierMois>=0?'+':''}${fmt(G.bourseGainDernierMois)}/mois`;
+  } else gainEl.style.display='none';
+  if(G.palier<1){document.getElementById('bld-bourse-lock').textContent='🔒 Palier Petit Bureau requis';document.getElementById('bld-bourse').classList.add('locked')}
+  else{document.getElementById('bld-bourse-lock').textContent='';document.getElementById('bld-bourse').classList.remove('locked')}
+    // Jalons panel
+  const nextJalon=JALONS_DEF.find(j=>!j.done());
+  const jalElm=document.getElementById('bld-jalon-next');
+  if(jalElm)jalElm.textContent=nextJalon?nextJalon.nom.replace(/[\u{1F300}-\u{1FFFF}]/gu,'').trim().substring(0,10)+'…':'Tous ✓';
+  const capElm=document.getElementById('bld-capital-cede');
+  if(capElm)capElm.textContent=G.capitalCede+'%';
+  const optElm=document.getElementById('bld-stock-opt');
+  if(optElm)optElm.textContent=G.stockOptions>0?G.stockOptions+' opt.':'0 opt.';
+  // Bâtiments expansion
+  updateBatiments();
+  updateHypeMini();
+}
+
+function updateHypeMini(){
+  // N'afficher que si palier >= 1 (bourse débloquée)
+  const mini=document.getElementById('hype-mini');
+  if(!mini)return;
+  if(G.palier<1){mini.style.display='none';return;}
+  mini.style.display='';
+  const hype=getHype();
+  document.getElementById('hype-mini-label').textContent=hype.nom.replace(/^[^\s]+\s/,''); // sans emoji
+  // Barres de phases
+  const bars=document.getElementById('hype-mini-bars');
+  const phaseLabels=['Trigger','Peak','Trough','Enlight.','Plateau'];
+  bars.innerHTML=HYPE_PHASES.map((h,i)=>{
+    const active=i===G.hypeCycleIndex%5;
+    return `<div style="flex:1;text-align:center;">
+      <div style="height:5px;border-radius:3px;background:${active?'var(--accent3)':'var(--bg3)'};margin-bottom:2px;transition:background .4s"></div>
+      <div style="font-size:7px;font-family:var(--mono);color:${active?'var(--accent3)':'var(--text3)'};white-space:nowrap;overflow:hidden">${phaseLabels[i]}</div>
+    </div>`;
+  }).join('');
+  // Tip dynamique
+  const tips={
+    0:'📈 Phase de démarrage — Investisseurs prudents.',
+    1:'🚀 Euphorie totale — ETF ×2 ! Mais attention à la chute.',
+    2:'😔 Désillusion — ETF en baisse. Bon moment pour acheter.',
+    3:'📈 Reprise saine — Vrais cas d\'usage émergent.',
+    4:'✅ Maturité — Revenus stables et prévisibles.',
+  };
+  document.getElementById('hype-mini-tip').textContent=(tips[G.hypeCycleIndex%5]||'')+' ↗ Gérer la bourse';
+}
+
+function updateBatiments(){
+  // Médical & Univ
+  const medCard=document.getElementById('bld-medical');const univCard=document.getElementById('bld-univ');const intlCard=document.getElementById('bld-intl');
+  if(G.palier>=2){medCard.classList.remove('locked');univCard.classList.remove('locked')}
+  if(G.palier>=3)intlCard.classList.remove('locked');
+}
+
+function palierProgress(){
+  if(G.palier>=PALIERS.length-1)return 100;
+  if(G.palier===0){
+    const cashPct=Math.min(G.cash/15000,1);
+    const iaPct=Math.min(iaCount()/1,1);
+    const empPct=Math.min(G.employes.length/1,1);
+    return Math.round(((cashPct+iaPct+empPct)/3)*100);
+  }
+  if(G.palier===1){
+    const cashPct=Math.min(G.cash/80000,1);
+    const iaPct=Math.min(iaCount()/3,1);
+    const empPct=Math.min(G.employes.length/5,1);
+    return Math.round(((cashPct+iaPct+empPct)/3)*100);
+  }
+  if(G.palier===2){
+    const cashPct=Math.min(G.cash/500000,1);
+    const iaPct=Math.min(iaCount()/5,1);
+    const empPct=Math.min(G.employes.length/8,1);
+    return Math.round(((cashPct+iaPct+empPct)/3)*100);
+  }
+  const cashPct=Math.min(G.cash/5000000,1);
+  const iaPct=Math.min(iaCount()/5,1);
+  const ethPct=Math.min(ethScore()/40,1);
+  return Math.round(((cashPct+iaPct+ethPct)/3)*100);
+}
+
+// ══════════════════════════════════════════════════
+//  TUTORIELS & ONBOARDING (V1.6.3)
+// ══════════════════════════════════════════════════
+const TUTO_PANELS = {
+  ia: {
+    title:'🤖 Comment fonctionne le Labo IA',
+    text:'Chaque IA génère des <strong>revenus passifs automatiques</strong> chaque mois. En contrepartie, elle consomme du <em>compute</em> (coût mensuel) et dégrade certains <em>piliers éthiques</em>.<br><br>Certaines IA nécessitent des employés spécifiques avant d\'être déployées. Les <strong>prérequis</strong> sont listés sur chaque carte.<br><br>💡 Tu peux upgrader chaque IA jusqu\'au niveau 5. Plus c\'est puissant, plus c\'est risqué éthiquement.'
+  },
+  equipe: {
+    title:'👥 Recruter : coût unique + salaire mensuel',
+    text:'Le recrutement coûte <strong>2× le salaire mensuel</strong> (coût unique d\'embauche), puis le salaire est prélevé chaque mois automatiquement.<br><br>⚠️ Recruter quand ta balance est négative = danger. Une projection t\'est affichée avant confirmation.<br><br>💡 Le <em>Responsable Éthique IA</em> ne génère pas de revenus directs mais protège tous tes piliers éthiques — indispensable pour éviter la crise.'
+  },
+  banque: {
+    title:'🏦 Emprunter pour accélérer',
+    text:'La banque propose 3 produits selon ton score éthique. <strong>Meilleure éthique = meilleur taux</strong> — reflet de la réalité des startups IA responsables.<br><br>Les mensualités sont prélevées automatiquement chaque mois. Elles s\'affichent dans ton bilan.<br><br>⚠️ Si ton éthique est &lt; 30%, seul le <em>Fonds Vautour</em> accepte de te prêter — à 15%/mois avec clause de rachat.'
+  },
+  bourse: {
+    title:'📈 Investir ton excédent',
+    text:'La bourse te permet de faire fructifier ton cash excédentaire. 3 produits :<br><br>📋 <strong>Obligations d\'État</strong> : 1%/mois garanti, sans risque.<br>📈 <strong>ETF Tech IA</strong> : ~3%/mois, multiplié par le <em>Hype Cycle</em>. Peut doubler ou chuter.<br>🪙 <strong>IA Token</strong> : très volatil, peut ×3 ou -50% en un mois.<br><br>💡 Les gains sont versés <strong>automatiquement chaque mois</strong> dans ton cash. Tu les vois sur la tuile Bourse (+XX$/mois).'
+  },
+  jalons: {
+    title:'💹 Le financement par étapes',
+    text:'Chaque levée de fonds t\'apporte du capital mais dilue ton contrôle. Les jalons se débloquent automatiquement selon tes conditions (palier, cash, éthique).<br><br>⚠️ Si tu cèdes &gt;50% du capital, tu perds le contrôle de ton entreprise.<br><br>📚 Les fondateurs de Snapchat, WeWork et Twitter ont tous perdu le contrôle avant la maturité de leur entreprise.'
+  },
+  finances: {
+    title:'💰 Lire ton bilan',
+    text:'<strong>Revenus</strong> = somme de toutes tes IA actives + bonus employés.<br><strong>Dépenses</strong> = salaires + compute + mensualités de prêts.<br><strong>Balance</strong> = revenus - dépenses, appliquée automatiquement chaque mois.<br><br>⚠️ Si la balance est négative 3 mois de suite → crise financière : tes investisseurs interviennent avec conditions.'
+  },
+  ethique: {
+    title:'⚖️ Les 6 piliers éthiques',
+    text:'<strong>Autonomie</strong> : contrôle humain sur les décisions IA.<br><strong>Biais</strong> : discrimination algorithmique dans les données.<br><strong>Contenus</strong> : production de contenus problématiques ou trompeurs.<br><strong>Dérapage</strong> : risque de comportement hors contrôle.<br><strong>Data workers</strong> : conditions des annotateurs humains.<br><strong>Vie privée</strong> : collecte et usage des données personnelles.<br><br>💡 Score global = moyenne des 6. &lt; 20% → crise immédiate.'
+  },
+  ratio: {
+    title:'🤖 Le ratio IA/Humain',
+    text:'Ce ratio mesure l\'équilibre entre tes IA actives et tes employés humains.<br><br>🟢 0-30% : lent mais éthique.<br>🟡 30-60% : zone optimale.<br>🟠 60-80% : tensions sociales.<br>🔴 80%+ : crise — revenus ÷1.3.<br>⛔ 85%+ : crise grave.<br><br>Les IA internes (HRBot, FinBot, LawBot) augmentent aussi ce ratio. Compense en recrutant des humains.'
+  }
+};
+
+let tutosSeen = {};
+
+function initTutos(){
+  try{ tutosSeen=JSON.parse(LS.get('ia_tutos_seen')||'{}'); }catch(e){tutosSeen={};}
+}
+function markTutoSeen(key){
+  tutosSeen[key]=true;
+  try{LS.set('ia_tutos_seen',JSON.stringify(tutosSeen));}catch(e){}
+}
+
+// Bouton ? inline
+function helpBtn(panelKey){
+  return `<button class="help-btn" onclick="showTuto('${panelKey}');event.stopPropagation()">?</button>`;
+}
+
+function showTuto(key){
+  const t=TUTO_PANELS[key];if(!t)return;
+  showEvent(`${t.title}`,t.text,[{label:'✓ Compris !',effet:()=>{markTutoSeen(key);}}]);
+}
+
+// Bandeau aide contextuel (affiché 1 fois)
+function sectionHelp(key){
+  const t=TUTO_PANELS[key];if(!t||tutosSeen[key])return'';
+  return `<div class="section-help"><strong>${t.title}</strong><br>${t.text.replace(/<[^>]+>/g,' ').substring(0,120)}… <span style="color:var(--accent2);cursor:pointer;text-decoration:underline" onclick="showTuto('${key}')">En savoir plus</span></div>`;
+}
+
+// ── ONBOARDING ──
+const ONBOARD_STEPS = 5;
+let onboardStep = 0;
+
+function initOnboard(){
+  const seen=LS.get('ia_onboard_v163');
+  if(seen)return;
+  // Build dots
+  const dots=document.getElementById('onboard-dots');
+  dots.innerHTML='';
+  for(let i=0;i<ONBOARD_STEPS;i++){const d=document.createElement('div');d.className='onboard-dot'+(i===0?' active':'');dots.appendChild(d);}
+  document.getElementById('onboard-overlay').classList.remove('hidden');
+  onboardStep=0;renderOnboardStep();
+}
+
+function renderOnboardStep(){
+  document.querySelectorAll('.onboard-step').forEach((s,i)=>{s.classList.toggle('active',i===onboardStep)});
+  document.querySelectorAll('.onboard-dot').forEach((d,i)=>d.classList.toggle('active',i===onboardStep));
+  document.getElementById('onboard-prev').style.display=onboardStep===0?'none':'';
+  document.getElementById('onboard-next').textContent=onboardStep===ONBOARD_STEPS-1?'Commencer 🚀 !':'Suivant →';
+}
+
+function onboardNav(dir){
+  onboardStep=Math.max(0,Math.min(ONBOARD_STEPS-1,onboardStep+dir));
+  renderOnboardStep();
+  if(onboardStep===ONBOARD_STEPS-1&&dir>0){
+    // Last step next = close
+    document.getElementById('onboard-next').onclick=closeOnboard;
+  } else {
+    document.getElementById('onboard-next').onclick=()=>onboardNav(1);
+  }
+}
+
+function closeOnboard(){
+  document.getElementById('onboard-overlay').classList.add('hidden');
+  LS.set('ia_onboard_v163','1');
+}
+
+// ══════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════
+function init(){
+  initTutos();
+  loadGame();
+  recalculate();updateAll();
+  setInterval(tick,15000); // 1 mois = 15s réelles (V1.6.4 — laisser le temps de lire)
+  setInterval(saveGame,30000); // autosave toutes les 30s
+  setTimeout(initOnboard,600); // délai pour le rendu
+}
+init();
+</script>
+</body>
+</html>
