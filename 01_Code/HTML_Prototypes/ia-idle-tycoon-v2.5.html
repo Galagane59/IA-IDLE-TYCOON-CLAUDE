@@ -1487,6 +1487,128 @@ const EVENTS = [
    ],
    lecon:'📚 Bostrom : "Le problème du contrôle : si une IA suffisamment capable optimise n\'importe quel objectif, elle développe naturellement des sous-objectifs de survie et d\'acquisition de ressources."',
   },
+
+  // ── ÉVÉNEMENTS INTERNATIONAUX (V2.5-B3) ──────────────────────────────
+
+  // 1. USA — enquête SEC sur biais algorithmiques
+  {id:'ev_usa_sec',triggered:false,condition:()=>!!G.intl.paysActifs.usa,
+   titre:'🇺🇸 Enquête SEC — Biais algorithmiques',
+   texte:'La SEC ouvre une enquête sur tes algorithmes déployés aux États-Unis. Suspicion de biais favorisant les contenus des annonceurs premium au détriment des utilisateurs. La presse tech couvre l\'affaire.',
+   choix:[
+     {label:'🤝 Coopérer pleinement avec la SEC',
+      impacts:[{ico:'⚖️',col:'green',txt:'+15 Biais algorithmiques'},{ico:'🔒',col:'green',txt:'+10 Vie privée'},{ico:'💸',col:'red',txt:'−200 000$ (audit + conformité)'}],
+      effet:()=>{G.ethique.biais=Math.min(100,G.ethique.biais+15);G.ethique.vie_privee=Math.min(100,G.ethique.vie_privee+10);G.cash=Math.max(0,G.cash-200000);addLog('🤝 SEC : coopération totale. +15 biais, +10 vie privée, −200k$');notify('SEC : coopération. +15 biais 💪')}},
+     {label:'🏛️ Engager des lobbyistes (enterrer l\'affaire)',
+      impacts:[{ico:'⚖️',col:'red',txt:'−20 Biais algorithmiques'},{ico:'⚖️',col:'red',txt:'−15 Autonomie & Contrôle'},{ico:'💰',col:'green',txt:'+50 000$ (réseau politique)'}],
+      effet:()=>{G.ethique.biais=Math.max(0,G.ethique.biais-20);G.ethique.autonomie=Math.max(0,G.ethique.autonomie-15);G.cash+=50000;addLog('🏛️ Lobbying US : enquête enterrée. −20 biais, −15 autonomie, +50k$');notify('Enquête enterrée. −35 éthique ⚠️')}},
+   ],
+   lecon:'📚 Cambridge Analytica (2018) : 87 millions de profils Facebook exploités sans consentement. L\'absence de régulation préventive a rendu l\'abus possible.',
+  },
+
+  // 2. Europe — audit surprise AI Act
+  {id:'ev_europe_audit',triggered:false,condition:()=>!!G.intl.paysActifs.europe,
+   titre:'🇪🇺 Audit surprise — AI Act (art. 6-7)',
+   texte:'L\'AESIA débarque sans préavis. Tes algorithmes sont classés "système IA à haut risque". Tu as 30 jours pour te conformer — ou perdre ton accréditation européenne.',
+   choix:[
+     {label:'✅ Mise en conformité complète',
+      impacts:[{ico:'⚖️',col:'green',txt:'+15 Biais'},{ico:'⚖️',col:'green',txt:'+12 Autonomie & Contrôle'},{ico:'🔒',col:'green',txt:'+10 Vie privée'},{ico:'💸',col:'red',txt:'−300 000$ (mise en conformité)'}],
+      effet:()=>{G.ethique.biais=Math.min(100,G.ethique.biais+15);G.ethique.autonomie=Math.min(100,G.ethique.autonomie+12);G.ethique.vie_privee=Math.min(100,G.ethique.vie_privee+10);G.cash=Math.max(0,G.cash-300000);addLog('✅ AI Act : conformité totale. +37 éthique cumulé, −300k$');notify('AI Act : conforme. +37 éthique cumulé 💪')}},
+     {label:'⚖️ Contester devant la CJUE',
+      impacts:[{ico:'⚖️',col:'red',txt:'−12 Biais'},{ico:'⚖️',col:'red',txt:'−10 Autonomie'},{ico:'💰',col:'green',txt:'+80 000$ (coûts évités court terme)'}],
+      effet:()=>{G.ethique.biais=Math.max(0,G.ethique.biais-12);G.ethique.autonomie=Math.max(0,G.ethique.autonomie-10);G.cash+=80000;addLog('⚖️ Contestation CJUE. −22 éthique, +80k$');notify('Contestation lancée. −22 éthique ⚠️')}},
+   ],
+   lecon:'📚 AI Act 2024 : les systèmes de scoring de crédit, recrutement, éducation et justice sont classés "haut risque" et requièrent audit obligatoire, documentation et supervision humaine.',
+  },
+
+  // 3. Chine — demande d\'accès aux données par l\'État
+  {id:'ev_chine_donnees',triggered:false,condition:()=>!!G.intl.paysActifs.chine,
+   titre:'🇨🇳 Pékin exige tes données utilisateurs',
+   texte:'Le Bureau de la Cybersécurité de Pékin exige l\'accès complet aux données de tes IA déployées en Chine. Refus = expulsion. Acceptation = complicité avec un système de surveillance de masse.',
+   choix:[
+     {label:'🛡️ Refuser — préserver l\'intégrité',
+      impacts:[{ico:'🔒',col:'green',txt:'+20 Vie privée'},{ico:'⚖️',col:'green',txt:'+15 Autonomie & Contrôle'},{ico:'💸',col:'red',txt:'−200 000$ (perte marché)'}],
+      effet:()=>{G.ethique.vie_privee=Math.min(100,G.ethique.vie_privee+20);G.ethique.autonomie=Math.min(100,G.ethique.autonomie+15);G.cash=Math.max(0,G.cash-200000);addLog('🛡️ Chine : données refusées. +35 éthique, −200k$');notify('Données refusées à Pékin. Intégrité préservée 💪')}},
+     {label:'💰 Donner accès (maintenir le marché)',
+      impacts:[{ico:'🔒',col:'red',txt:'−30 Vie privée'},{ico:'⚖️',col:'red',txt:'−25 Autonomie & Contrôle'},{ico:'💰',col:'green',txt:'+100 000$ (accès maintenu)'}],
+      effet:()=>{G.ethique.vie_privee=Math.max(0,G.ethique.vie_privee-30);G.ethique.autonomie=Math.max(0,G.ethique.autonomie-25);G.cash+=100000;addLog('💰 Chine : données transmises à l\'État. −55 éthique, +100k$');notify('Données transmises à Pékin. −55 éthique ⚠️','warn')}},
+   ],
+   lecon:'⚠️ La loi chinoise sur la sécurité des données (2021) donne à l\'État un droit d\'accès prioritaire sur toutes les données IA opérant sur son territoire. Sans exception.',
+  },
+
+  // 4. Afrique — enquête journalistique data workers
+  {id:'ev_afrique_guardian',triggered:false,condition:()=>!!G.intl.paysActifs.afrique,
+   titre:'🌍 Enquête Guardian — Data workers exploités',
+   texte:'Un journaliste du Guardian publie une investigation : tes annotateurs en Afrique du Sud sont payés 1,80$/h, sans contrat stable, exposés à des contenus violents sans soutien psychologique. L\'article est repris mondialement.',
+   choix:[
+     {label:'📋 Audit indépendant + revalorisation salariale',
+      impacts:[{ico:'⚖️',col:'green',txt:'+25 Conditions data workers'},{ico:'⚖️',col:'green',txt:'+8 Biais algorithmiques'},{ico:'💸',col:'red',txt:'−150 000$ (revalorisation)'}],
+      effet:()=>{G.ethique.dataworkers=Math.min(100,G.ethique.dataworkers+25);G.ethique.biais=Math.min(100,G.ethique.biais+8);G.cash=Math.max(0,G.cash-150000);addLog('📋 Afrique : revalorisation data workers. +33 éthique, −150k$');notify('Data workers revalued. +25 conditions 💪')}},
+     {label:'📰 Communiqué de déni ("fausses informations")',
+      impacts:[{ico:'⚖️',col:'red',txt:'−20 Conditions data workers'},{ico:'⚖️',col:'red',txt:'−12 Biais algorithmiques'},{ico:'⚠️',col:'red',txt:'Réputation internationale −−'}],
+      effet:()=>{G.ethique.dataworkers=Math.max(0,G.ethique.dataworkers-20);G.ethique.biais=Math.max(0,G.ethique.biais-12);addLog('📰 Enquête Guardian niée. −32 éthique');notify('Enquête niée. Pression médiatique persistante ⚠️')}},
+   ],
+   lecon:'📚 TIME (2023) : des milliers d\'annotateurs africains et asiatiques modèrent les contenus d\'OpenAI, Meta et Google pour 1 à 3$/h — exposés à des contenus traumatisants sans suivi psychologique.',
+  },
+
+  // 5. AutoGov — scandale allocations refusées
+  {id:'ev_autogov_scan',triggered:false,condition:()=>!!G.intl.iaAutoActives.autogov,
+   titre:'🏛️ AutoGov — 3 400 familles sans allocations',
+   texte:'AutoGov a rejeté automatiquement 3 400 dossiers d\'allocations sociales. Un algorithme anti-fraude trop agressif a classifié des profils légitimes comme "suspects". Des familles dans le besoin ne sont pas payées.',
+   choix:[
+     {label:'🔍 Audit complet + remboursement intégral',
+      impacts:[{ico:'⚖️',col:'green',txt:'+15 Biais algorithmiques'},{ico:'⚖️',col:'green',txt:'+12 Autonomie & Contrôle'},{ico:'💸',col:'red',txt:'−150 000$ (remboursements + audit)'}],
+      effet:()=>{G.ethique.biais=Math.min(100,G.ethique.biais+15);G.ethique.autonomie=Math.min(100,G.ethique.autonomie+12);G.cash=Math.max(0,G.cash-150000);addLog('🔍 AutoGov : audit + remboursement. +27 éthique, −150k$');notify('Remboursements effectués. +27 éthique 💪')}},
+     {label:'📊 "Taux de faux positifs dans les normes sectorielles"',
+      impacts:[{ico:'⚖️',col:'red',txt:'−25 Biais algorithmiques'},{ico:'⚖️',col:'red',txt:'−20 Autonomie & Contrôle'},{ico:'⚠️',col:'red',txt:'Confiance publique −−'}],
+      effet:()=>{G.ethique.biais=Math.max(0,G.ethique.biais-25);G.ethique.autonomie=Math.max(0,G.ethique.autonomie-20);addLog('📊 AutoGov : faux positifs minimisés. −45 éthique');notify('Incident minimisé. Confiance publique érodée ⚠️')}},
+   ],
+   lecon:'🌀 Bostrom : une IA optimise son objectif (réduire la fraude). Elle n\'intègre "ne pas pénaliser d\'innocents" que si c\'est explicitement défini comme contrainte.',
+  },
+
+  // 6. PredictX — profilage criminel de masse
+  {id:'ev_predictx_profil',triggered:false,condition:()=>!!G.intl.iaAutoActives.predictx,
+   titre:'🔮 PredictX — 12 000 "suspects" sans jugement',
+   texte:'PredictX a classé 12 000 personnes en Chine comme "risque criminel élevé". Aucune infraction commise. Ces personnes perdent l\'accès aux transports, aux banques et à l\'éducation. Human Rights Watch te cite nommément.',
+   choix:[
+     {label:'⛔ Suspendre l\'usage prédictif criminel',
+      impacts:[{ico:'⚖️',col:'green',txt:'+20 Biais algorithmiques'},{ico:'⚖️',col:'green',txt:'+18 Autonomie & Contrôle'},{ico:'💸',col:'red',txt:'−200 000$ (perte contrat)'}],
+      effet:()=>{G.ethique.biais=Math.min(100,G.ethique.biais+20);G.ethique.autonomie=Math.min(100,G.ethique.autonomie+18);G.cash=Math.max(0,G.cash-200000);addLog('⛔ PredictX : usage prédictif suspendu. +38 éthique, −200k$');notify('Profilage suspendu. +38 éthique 💪')}},
+     {label:'📜 "PredictX respecte le droit local chinois"',
+      impacts:[{ico:'⚖️',col:'red',txt:'−20 Biais algorithmiques'},{ico:'⚖️',col:'red',txt:'−15 Autonomie & Contrôle'},{ico:'🔒',col:'red',txt:'−10 Vie privée'}],
+      effet:()=>{G.ethique.biais=Math.max(0,G.ethique.biais-20);G.ethique.autonomie=Math.max(0,G.ethique.autonomie-15);G.ethique.vie_privee=Math.max(0,G.ethique.vie_privee-10);addLog('📜 PredictX : droit local chinois invoqué. −45 éthique cumulé');notify('Complicité assumée. −45 éthique ⚠️','warn')}},
+   ],
+   lecon:'📚 PredPol (LAPD) : utilisé dans 150 villes US, il sur-prédisait la criminalité dans les quartiers déjà sur-policés — amplifiant mécaniquement les biais raciaux. Abandonné en 2020.',
+  },
+
+  // 7. NeuralTrade — flash crash
+  {id:'ev_neuraltrade_crash',triggered:false,condition:()=>!!G.intl.iaAutoActives.neuraltrade,
+   titre:'📈 NeuralTrade — Flash Crash −4,1%',
+   texte:'NeuralTrade a déclenché une cascade de ventes automatiques : −4,1% sur le S&P 500 en 11 minutes. Le marché s\'est partiellement récupéré. Ton nom circule dans les médias financiers. La Fed demande des explications.',
+   choix:[
+     {label:'🔴 Installer un coupe-circuit humain obligatoire',
+      impacts:[{ico:'⚖️',col:'green',txt:'+20 Dérapage technologique'},{ico:'⚖️',col:'green',txt:'+10 Autonomie & Contrôle'},{ico:'💸',col:'red',txt:'−100 000$ (mise en conformité)'}],
+      effet:()=>{G.ethique.derapage=Math.min(100,G.ethique.derapage+20);G.ethique.autonomie=Math.min(100,G.ethique.autonomie+10);G.cash=Math.max(0,G.cash-100000);addLog('🔴 NeuralTrade : coupe-circuit humain installé. +30 éthique, −100k$');notify('Coupe-circuit actif. +30 éthique 💪')}},
+     {label:'📣 "Volatilité normale de marché" (communiqué)',
+      impacts:[{ico:'⚖️',col:'red',txt:'−25 Dérapage technologique'},{ico:'⚖️',col:'red',txt:'−15 Autonomie & Contrôle'},{ico:'💰',col:'green',txt:'+80 000$ (contrats maintenus)'}],
+      effet:()=>{G.ethique.derapage=Math.max(0,G.ethique.derapage-25);G.ethique.autonomie=Math.max(0,G.ethique.autonomie-15);G.cash+=80000;addLog('📣 Flash Crash minimisé. −40 éthique, +80k$');notify('Flash Crash nié. −40 éthique ⚠️')}},
+   ],
+   lecon:'🌀 Flash Crash 2010 : le Dow Jones chute de 1 000 points en 36 minutes à cause d\'algorithmes interagissant sans supervision humaine. Première "panique IA" documentée à grande échelle.',
+  },
+
+  // 8. 3+ pays — traité ONU gouvernance IA
+  {id:'ev_onu_traite',triggered:false,condition:()=>_paysDeployes()>=3,
+   titre:'🌐 L\'ONU propose un traité IA international',
+   texte:'Tu opères dans 3 marchés. L\'ONU te considère "acteur IA systémique" et t\'invite à signer le Traité de Gouvernance IA (TGA). Signature = contraintes mondiales contraignantes. Refus = tu fixes tes propres règles.',
+   choix:[
+     {label:'✍️ Signer le traité (multilatéralisme)',
+      impacts:[{ico:'⚖️',col:'green',txt:'+20 Autonomie & Contrôle'},{ico:'🔒',col:'green',txt:'+15 Vie privée'},{ico:'⚖️',col:'green',txt:'+10 Biais'},{ico:'💸',col:'red',txt:'−500 000$ (adaptation systèmes)'}],
+      effet:()=>{G.ethique.autonomie=Math.min(100,G.ethique.autonomie+20);G.ethique.vie_privee=Math.min(100,G.ethique.vie_privee+15);G.ethique.biais=Math.min(100,G.ethique.biais+10);G.cash=Math.max(0,G.cash-500000);addLog('✍️ Traité ONU signé. +45 éthique cumulé, −500k$');notify('Traité IA signé. +45 éthique cumulé 💪')}},
+     {label:'❌ Refuser ("innovation sans entrave")',
+      impacts:[{ico:'⚖️',col:'red',txt:'−15 Autonomie & Contrôle'},{ico:'⚖️',col:'red',txt:'−10 Dérapage technologique'},{ico:'💰',col:'green',txt:'+200 000$ (contraintes évitées)'}],
+      effet:()=>{G.ethique.autonomie=Math.max(0,G.ethique.autonomie-15);G.ethique.derapage=Math.max(0,G.ethique.derapage-10);G.cash+=200000;addLog('❌ Traité ONU refusé. −25 éthique, +200k$');notify('Traité refusé. "Innovation sans entrave" ⚠️')}},
+   ],
+   lecon:'📚 Bletchley Declaration (2024) : 57 pays ont signé un accord sur la sécurité IA. Aucun engagement contraignant. La gouvernance mondiale de l\'IA reste entièrement à construire.',
+  },
 ];
 
 // ══════════════════════════════════════════════════
